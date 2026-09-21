@@ -1,0 +1,6 @@
+* @rgsj-000
+/src/modules/bookings/ @rgsj-000
+/src/modules/inventory/ @rgsj-000
+/src/modules/commissions/ @rgsj-000
+/src/modules/identity/ @rgsj-000
+/supabase/migrations/ @rgsj-000
