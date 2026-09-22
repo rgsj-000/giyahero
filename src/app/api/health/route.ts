@@ -1,7 +1,7 @@
-import postgres from 'postgres';
-import { NextResponse } from 'next/server';
-import { getEnv } from '@/infrastructure/config/env';
-import { checkHealth } from '@/infrastructure/health/check-health';
+import postgres from "postgres";
+import { NextResponse } from "next/server";
+import { getEnv } from "@/infrastructure/config/env";
+import { checkHealth } from "@/infrastructure/health/check-health";
 
 export async function GET() {
   const env = getEnv();
@@ -16,5 +16,7 @@ export async function GET() {
 
   await sql.end({ timeout: 1 });
 
-  return NextResponse.json(result, { status: result.status === 'ok' ? 200 : 503 });
+  return NextResponse.json(result, {
+    status: result.status === "ok" ? 200 : 503,
+  });
 }

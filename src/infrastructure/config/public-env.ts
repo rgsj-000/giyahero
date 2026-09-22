@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 const publicEnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
@@ -7,7 +7,9 @@ const publicEnvSchema = z.object({
 
 export type PublicEnv = z.infer<typeof publicEnvSchema>;
 
-export function parsePublicEnv(input: Record<string, string | undefined>): PublicEnv {
+export function parsePublicEnv(
+  input: Record<string, string | undefined>,
+): PublicEnv {
   return publicEnvSchema.parse(input);
 }
 

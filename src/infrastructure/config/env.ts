@@ -1,8 +1,10 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 const serverEnvSchema = z
   .object({
-    NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    NODE_ENV: z
+      .enum(["development", "test", "production"])
+      .default("development"),
     NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
     NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
@@ -18,8 +20,8 @@ const serverEnvSchema = z
     if (value.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        path: ['NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY'],
-        message: 'SUPABASE_SERVICE_ROLE_KEY must never be public',
+        path: ["NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY"],
+        message: "SUPABASE_SERVICE_ROLE_KEY must never be public",
       });
     }
   });
