@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: 22
       - run: pnpm install --no-frozen-lockfile
-      - run: pnpm format
+      - run: pnpm exec prettier --write .
       - name: Commit generated lockfile and formatting
         run: |
           git config user.name "github-actions[bot]"
