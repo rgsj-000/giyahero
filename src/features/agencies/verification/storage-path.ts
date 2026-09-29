@@ -28,10 +28,7 @@ export function sanitizeVerificationFilename(filename: string): string {
   const safeExtension = extension.replace(/[^A-Za-z0-9.]/g, "");
 
   const normalizedStem = safeStem || FALLBACK_FILENAME;
-  const maxStemLength = Math.max(
-    1,
-    MAX_FILENAME_LENGTH - safeExtension.length,
-  );
+  const maxStemLength = Math.max(1, MAX_FILENAME_LENGTH - safeExtension.length);
   const truncatedStem = normalizedStem.slice(0, maxStemLength);
 
   return `${truncatedStem}${safeExtension}`;
