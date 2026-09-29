@@ -51,10 +51,7 @@ test(
   "owner prepares, edits, and submits agency verification",
   async ({ page }) => {
     const owner = await provisionE2EUser("agency-verification-owner");
-    const agencyId = await createAgencyForUser(
-      owner.id,
-      "North Star Quezon Tours",
-    );
+    const agencyId = await createAgencyForUser(owner.id, "North Star Quezon Tours");
 
     try {
       await signInThroughUi(page, owner);
@@ -65,9 +62,7 @@ test(
       ).toBeVisible();
       await expect(page.getByText("Business Registration")).toBeVisible();
       await expect(page.getByText("Current Business Permit")).toBeVisible();
-      await expect(
-        page.getByText("Authorized Representative ID"),
-      ).toBeVisible();
+      await expect(page.getByText("Authorized Representative ID")).toBeVisible();
       await expect(page.getByText("DOT Accreditation")).toBeVisible();
       await expect(page.getByText("Optional")).toBeVisible();
 
@@ -88,9 +83,7 @@ test(
 
       await expect(page.getByText("DTI Registration.pdf")).toBeVisible();
       await expect(page.getByText("Mayor's Permit 2026.PDF")).toBeVisible();
-      await expect(
-        page.getByText("Authorized Representative.pdf"),
-      ).toBeVisible();
+      await expect(page.getByText("Authorized Representative.pdf")).toBeVisible();
       await expect(submit).toBeEnabled();
 
       const admin = getE2EAdminClient();
@@ -108,9 +101,7 @@ test(
         ),
       );
 
-      const registrationCard = page.getByTestId(
-        "verification-business_registration",
-      );
+      const registrationCard = page.getByTestId("verification-business_registration");
       await registrationCard.getByRole("button", { name: /remove/i }).click();
       await expect(submit).toBeDisabled();
 
@@ -122,9 +113,7 @@ test(
       await submit.click();
       await expect(page.getByText(/^Submitted$/)).toBeVisible();
       await expect(submit).toBeHidden();
-      await expect(page.getByRole("button", { name: /remove/i })).toHaveCount(
-        0,
-      );
+      await expect(page.getByRole("button", { name: /remove/i })).toHaveCount(0);
     } finally {
       await deleteAgency(agencyId);
       await removeE2EUser(owner.id);
@@ -137,10 +126,7 @@ test(
   async ({ page }) => {
     const owner = await provisionE2EUser("agency-verification-owner-access");
     const staff = await provisionE2EUser("agency-verification-booking-staff");
-    const agencyId = await createAgencyForUser(
-      owner.id,
-      "Access Boundary Tours",
-    );
+    const agencyId = await createAgencyForUser(owner.id, "Access Boundary Tours");
     const admin = getE2EAdminClient();
 
     try {
