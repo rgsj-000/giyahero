@@ -8,7 +8,10 @@ import {
 
 async function createAgencyForUser(userId: string, label: string) {
   const admin = getE2EAdminClient();
-  const slug = `${label}-${crypto.randomUUID().slice(0, 8)}`.toLowerCase();
+  const slug = `${label}-${crypto.randomUUID().slice(0, 8)}`
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
   const { data, error } = await admin
     .from("agencies")
     .insert({
