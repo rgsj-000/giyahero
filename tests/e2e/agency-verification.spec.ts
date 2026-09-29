@@ -67,19 +67,16 @@ test("owner prepares, edits, and submits agency verification", async ({
       page.getByRole("heading", { name: /agency verification/i }),
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Business Registration", exact: true }),
+      page.getByRole("heading", { name: /^Business Registration$/ }),
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Current Business Permit", exact: true }),
+      page.getByRole("heading", { name: /^Current Business Permit$/ }),
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", {
-        name: "Authorized Representative ID",
-        exact: true,
-      }),
+      page.getByRole("heading", { name: /^Authorized Representative ID$/ }),
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "DOT Accreditation", exact: true }),
+      page.getByRole("heading", { name: /^DOT Accreditation$/ }),
     ).toBeVisible();
     await expect(page.getByText("Optional", { exact: true })).toBeVisible();
 
