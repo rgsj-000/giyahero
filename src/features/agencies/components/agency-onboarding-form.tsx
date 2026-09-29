@@ -109,7 +109,8 @@ export function AgencyOnboardingForm() {
 
             <div className="mt-10 space-y-5 text-sm text-emerald-50/80">
               <p>
-                1. Create the agency workspace and become its owner automatically.
+                1. Create the agency workspace and become its owner
+                automatically.
               </p>
               <p>
                 2. Submit business verification documents through the private
