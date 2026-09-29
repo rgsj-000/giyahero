@@ -49,14 +49,15 @@ export default async function AgencyVerificationPage({
     redirect("/agency/onboarding");
   }
 
-  let { data: submission, error: submissionError } = await supabase
+  const submissionResult = await supabase
     .from("agency_verification_submissions")
     .select("id,status,submitted_at,reviewed_at,decision_notes")
     .eq("agency_id", agencyId)
     .limit(1)
     .maybeSingle();
+  let submission = submissionResult.data;
 
-  if (submissionError) throw submissionError;
+  if (submissionResult.error) throw submissionResult.error;
 
   if (!submission && agency.status === "draft") {
     const { data: draftId, error: draftError } = await supabase.rpc(
