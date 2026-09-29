@@ -113,13 +113,18 @@ export function AuthForm({ mode }: AuthFormProps) {
         </section>
 
         <section className="p-7 sm:p-10 lg:p-12">
-          <Link className="text-lg font-semibold text-emerald-800 lg:hidden" href="/">
+          <Link
+            className="text-lg font-semibold text-emerald-800 lg:hidden"
+            href="/"
+          >
             GiyaHero
           </Link>
 
           <div className="mt-8 lg:mt-0">
             <p className="text-sm font-medium text-emerald-700">
-              {isRegister ? "Start planning with confidence" : "Continue your trip planning"}
+              {isRegister
+                ? "Start planning with confidence"
+                : "Continue your trip planning"}
             </p>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
               {isRegister ? "Create your GiyaHero account" : "Welcome back"}
