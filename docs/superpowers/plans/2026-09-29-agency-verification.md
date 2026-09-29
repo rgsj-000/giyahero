@@ -78,6 +78,7 @@
 ### Task 1: Verification State Machine and Authorization RPCs
 
 **Files:**
+
 - Create: `supabase/migrations/202609290003_agency_verification_workflow.sql`
 - Create: `tests/unit/agency-verification-migration.test.ts`
 - Create: `tests/integration/helpers/verification-fixtures.ts`
@@ -85,6 +86,7 @@
 - Modify: `.github/workflows/ci.yml`
 
 **Interfaces:**
+
 - Consumes: existing `public.has_agency_role(uuid, agency_member_role[])`, `public.has_platform_admin_role(platform_admin_role[])`, `agencies`, `agency_members`, `platform_admin_memberships`, `agency_verification_submissions`, and `agency_verification_documents`.
 - Produces:
   - `public.create_verification_draft(target_agency_id uuid) returns uuid`
@@ -197,6 +199,7 @@ git commit -m "feat: add agency verification workflow"
 ### Task 2: Private Verification Document Storage
 
 **Files:**
+
 - Create: `supabase/migrations/202609290004_agency_verification_storage.sql`
 - Create: `src/features/agencies/verification/document-types.ts`
 - Create: `src/features/agencies/verification/storage-path.ts`
@@ -205,6 +208,7 @@ git commit -m "feat: add agency verification workflow"
 - Create: `tests/integration/agency-verification-storage.test.ts`
 
 **Interfaces:**
+
 - Consumes: Task 1 draft submission and role rules.
 - Produces:
   - `type VerificationDocumentType = "business_registration" | "business_permit" | "authorized_representative_id" | "dot_accreditation"`
@@ -294,6 +298,7 @@ git commit -m "feat: secure agency verification documents"
 ### Task 3: Agency Verification Workspace
 
 **Files:**
+
 - Create: `src/app/agency/[agencyId]/verification/page.tsx`
 - Create: `src/features/agencies/verification/agency-verification-workspace.tsx`
 - Create: `src/features/agencies/verification/document-card.tsx`
@@ -302,6 +307,7 @@ git commit -m "feat: secure agency verification documents"
 - Modify: `.github/workflows/ci.yml`
 
 **Interfaces:**
+
 - Consumes: Task 1 RPCs; Task 2 document definitions, path builder, private bucket; existing `createServerSupabaseClient()` and `createBrowserSupabaseClient()`.
 - Produces: authenticated route `/agency/[agencyId]/verification` and agency-facing upload/submission workflow.
 - E2E helper interfaces in `tests/e2e/helpers/verification-auth.ts`:
@@ -414,6 +420,7 @@ git commit -m "feat: add agency verification workspace"
 ### Task 4: Admin Verification Queue and Review Decision UI
 
 **Files:**
+
 - Create: `src/app/admin/verifications/page.tsx`
 - Create: `src/app/admin/verifications/[submissionId]/page.tsx`
 - Create: `src/features/agencies/verification/admin-verification-queue.tsx`
@@ -421,6 +428,7 @@ git commit -m "feat: add agency verification workspace"
 - Create: `tests/e2e/admin-verification.spec.ts`
 
 **Interfaces:**
+
 - Consumes: Task 1 verifier read policy and review/decision RPCs; Task 2 private storage SELECT policy; shared verification document definitions.
 - Produces: `/admin/verifications` and `/admin/verifications/[submissionId]` restricted to `super_admin` and `agency_verifier`.
 
@@ -506,10 +514,12 @@ git commit -m "feat: add agency verification review console"
 ### Task 5: Full Verification Journey and Regression Gate
 
 **Files:**
+
 - Modify: `tests/e2e/agency-onboarding.spec.ts` only if needed to assert the existing redirect into the new verification route.
 - Modify: verification tests from Tasks 1–4 only to close failures discovered by the full journey; do not add unrelated features.
 
 **Interfaces:**
+
 - Consumes: all previous tasks.
 - Produces: a verified complete journey and a clean branch ready for review.
 
