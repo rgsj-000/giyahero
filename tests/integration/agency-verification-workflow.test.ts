@@ -282,14 +282,19 @@ describe("agency verification workflow", () => {
     );
     expect(superAdminStart.error).toBeNull();
 
-    const [{ data: firstSubmission }, { data: firstAgency }] = await Promise.all([
-      admin
-        .from("agency_verification_submissions")
-        .select("status")
-        .eq("id", first.submissionId)
-        .single(),
-      admin.from("agencies").select("status").eq("id", first.agencyId).single(),
-    ]);
+    const [{ data: firstSubmission }, { data: firstAgency }] =
+      await Promise.all([
+        admin
+          .from("agency_verification_submissions")
+          .select("status")
+          .eq("id", first.submissionId)
+          .single(),
+        admin
+          .from("agencies")
+          .select("status")
+          .eq("id", first.agencyId)
+          .single(),
+      ]);
 
     expect(firstSubmission?.status).toBe("under_review");
     expect(firstAgency?.status).toBe("under_review");
@@ -419,7 +424,10 @@ describe("agency verification workflow", () => {
   });
 
   it("lets verifier roles read an unverified agency without making it public", async () => {
-    const agencyId = await createAgencyFixture(owner.id, "Private review agency");
+    const agencyId = await createAgencyFixture(
+      owner.id,
+      "Private review agency",
+    );
     await createDraft(agencyId);
     const anonymous = createAnonymousClient();
 
