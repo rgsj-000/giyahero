@@ -31,10 +31,7 @@ describe("agency verification document domain", () => {
       ]),
     ).toEqual({
       complete: false,
-      missingRequired: [
-        "business_permit",
-        "authorized_representative_id",
-      ],
+      missingRequired: ["business_permit", "authorized_representative_id"],
     });
 
     expect(
@@ -64,8 +61,6 @@ describe("agency verification document domain", () => {
         uploadId: "upload-789",
         filename: "Mayor's Permit.PDF",
       }),
-    ).toBe(
-      "agency/agency-123/submission-456/upload-789/Mayor-s-Permit.pdf",
-    );
+    ).toBe("agency/agency-123/submission-456/upload-789/Mayor-s-Permit.pdf");
   });
 });

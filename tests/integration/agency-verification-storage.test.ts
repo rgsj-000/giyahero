@@ -35,15 +35,13 @@ function buildPath(
   return `agency/${targetAgencyId}/${targetSubmissionId}/${randomUUID()}/${filename}`;
 }
 
-async function uploadPdf(
-  client: TestIdentity["client"],
-  path: string,
-) {
-  const result = await client.storage.from(bucketName).upload(
-    path,
-    new Uint8Array([0x25, 0x50, 0x44, 0x46]),
-    { contentType: "application/pdf", upsert: false },
-  );
+async function uploadPdf(client: TestIdentity["client"], path: string) {
+  const result = await client.storage
+    .from(bucketName)
+    .upload(path, new Uint8Array([0x25, 0x50, 0x44, 0x46]), {
+      contentType: "application/pdf",
+      upsert: false,
+    });
   if (!result.error) uploadedPaths.add(path);
   return result;
 }
@@ -164,7 +162,10 @@ describe("agency verification storage", () => {
   });
 
   it("keeps submitted evidence readable but immutable to the agency and readable to verifiers", async () => {
-    const reviewAgencyId = await createAgencyFixture(owner.id, "Review storage agency");
+    const reviewAgencyId = await createAgencyFixture(
+      owner.id,
+      "Review storage agency",
+    );
     const { data: reviewSubmissionId, error: draftError } =
       await owner.client.rpc("create_verification_draft", {
         target_agency_id: reviewAgencyId,
@@ -208,17 +209,21 @@ describe("agency verification storage", () => {
       (await owner.client.storage.from(bucketName).download(firstPath)).error,
     ).toBeNull();
     expect(
-      (await verifier.client.storage.from(bucketName).download(firstPath)).error,
+      (await verifier.client.storage.from(bucketName).download(firstPath))
+        .error,
     ).toBeNull();
     expect(
-      (await superAdmin.client.storage.from(bucketName).download(firstPath)).error,
+      (await superAdmin.client.storage.from(bucketName).download(firstPath))
+        .error,
     ).toBeNull();
 
     expect(
-      (await moderator.client.storage.from(bucketName).download(firstPath)).error,
+      (await moderator.client.storage.from(bucketName).download(firstPath))
+        .error,
     ).not.toBeNull();
     expect(
-      (await unrelated.client.storage.from(bucketName).download(firstPath)).error,
+      (await unrelated.client.storage.from(bucketName).download(firstPath))
+        .error,
     ).not.toBeNull();
 
     const deleteAttempt = await owner.client.storage
