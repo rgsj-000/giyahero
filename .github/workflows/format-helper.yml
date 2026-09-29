@@ -1,0 +1,38 @@
+name: format-helper
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/agency-verification
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm install --no-frozen-lockfile
+      - name: Format Task 2 domain files
+        run: >-
+          pnpm exec prettier --write
+          src/features/agencies/verification/types.ts
+          src/features/agencies/verification/document-types.ts
+      - name: Commit exact formatter output
+        shell: bash
+        run: |
+          if git diff --quiet -- src/features/agencies/verification/types.ts src/features/agencies/verification/document-types.ts; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/features/agencies/verification/types.ts src/features/agencies/verification/document-types.ts
+          git commit -m "style: format task two domain files"
+          git push origin HEAD:feat/agency-verification
