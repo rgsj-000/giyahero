@@ -32,7 +32,10 @@ export async function provisionE2EUser(label: string): Promise<{
     user_metadata: { full_name: label },
   });
 
-  if (error || !data.user) throw error ?? new Error("failed to create E2E user");
+  if (error || !data.user) {
+    throw error ?? new Error("failed to create E2E user");
+  }
+
   return { id: data.user.id, email, password };
 }
 
