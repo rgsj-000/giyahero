@@ -12,7 +12,9 @@ test("traveler can open the sign in screen", async ({ page }) => {
   await expect(
     page.getByRole("button", { name: /continue with google/i }),
   ).toBeVisible();
-  await expect(page.getByRole("link", { name: /create an account/i })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /create an account/i }),
+  ).toBeVisible();
 });
 
 test("traveler can open the registration screen", async ({ page }) => {
