@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { createBrowserSupabaseClient } from "@/infrastructure/supabase/browser";
 
 type AuthMode = "login" | "register";
@@ -11,16 +11,50 @@ type AuthFormProps = {
   mode: AuthMode;
 };
 
+function getSafeNextPath(value: string | null) {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+    return "/";
+  }
+
+  return value;
+}
+
 export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [nextPath, setNextPath] = useState("/");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isRegister = mode === "register";
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    setNextPath(getSafeNextPath(searchParams.get("next")));
+  }, []);
+
+  function getCallbackUrl() {
+    const callbackUrl = new URL("/auth/callback", window.location.origin);
+
+    if (nextPath !== "/") {
+      callbackUrl.searchParams.set("next", nextPath);
+    }
+
+    return callbackUrl.toString();
+  }
+
+  function getAlternateAuthHref() {
+    const pathname = isRegister ? "/login" : "/register";
+
+    if (nextPath === "/") {
+      return pathname;
+    }
+
+    return `${pathname}?next=${encodeURIComponent(nextPath)}`;
+  }
 
   async function handleEmailAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -37,7 +71,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           password,
           options: {
             data: { full_name: fullName.trim() },
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            emailRedirectTo: getCallbackUrl(),
           },
         });
 
@@ -47,7 +81,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         }
 
         if (data.session) {
-          router.replace("/");
+          router.replace(nextPath);
           router.refresh();
           return;
         }
@@ -68,7 +102,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         return;
       }
 
-      router.replace("/");
+      router.replace(nextPath);
       router.refresh();
     } finally {
       setIsSubmitting(false);
@@ -84,7 +118,7 @@ export function AuthForm({ mode }: AuthFormProps) {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: getCallbackUrl(),
       },
     });
 
@@ -222,7 +256,7 @@ export function AuthForm({ mode }: AuthFormProps) {
             {isRegister ? "Already have an account?" : "New to GiyaHero?"}{" "}
             <Link
               className="font-semibold text-emerald-700 hover:text-emerald-800"
-              href={isRegister ? "/login" : "/register"}
+              href={getAlternateAuthHref()}
             >
               {isRegister ? "Sign in" : "Create an account"}
             </Link>
