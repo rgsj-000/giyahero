@@ -110,11 +110,13 @@ export async function createAgencyFixture(
     throw agencyError ?? new Error("Unable to create agency fixture");
   }
 
-  const { error: memberError } = await adminClient.from("agency_members").insert({
-    agency_id: agency.id,
-    user_id: ownerUserId,
-    role: "owner",
-  });
+  const { error: memberError } = await adminClient
+    .from("agency_members")
+    .insert({
+      agency_id: agency.id,
+      user_id: ownerUserId,
+      role: "owner",
+    });
 
   if (memberError) {
     await adminClient.from("agencies").delete().eq("id", agency.id);
@@ -151,7 +153,39 @@ export async function grantPlatformRole(
 }
 
 export async function deleteTestIdentity(userId: string): Promise<void> {
-  await adminClient.from("agencies").delete().eq("created_by", userId);
+  const agencyIds = new Set<string>();
+
+  const { data: ownedAgencies, error: ownedAgencyError } = await adminClient
+    .from("agencies")
+    .select("id")
+    .eq("created_by", userId);
+  if (ownedAgencyError) throw ownedAgencyError;
+  for (const agency of ownedAgencies ?? []) agencyIds.add(agency.id as string);
+
+  const { data: submissions, error: submissionError } = await adminClient
+    .from("agency_verification_submissions")
+    .select("agency_id")
+    .or(`submitted_by.eq.${userId},reviewed_by.eq.${userId}`);
+  if (submissionError) throw submissionError;
+  for (const submission of submissions ?? []) {
+    agencyIds.add(submission.agency_id as string);
+  }
+
+  const { data: documents, error: documentError } = await adminClient
+    .from("agency_verification_documents")
+    .select("agency_id")
+    .eq("uploaded_by", userId);
+  if (documentError) throw documentError;
+  for (const document of documents ?? []) agencyIds.add(document.agency_id as string);
+
+  if (agencyIds.size > 0) {
+    const { error: agencyDeleteError } = await adminClient
+      .from("agencies")
+      .delete()
+      .in("id", [...agencyIds]);
+    if (agencyDeleteError) throw agencyDeleteError;
+  }
+
   const { error } = await adminClient.auth.admin.deleteUser(userId);
   if (error) throw error;
 }
