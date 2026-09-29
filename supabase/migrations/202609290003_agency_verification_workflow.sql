@@ -330,6 +330,7 @@ begin
 
   update public.agency_verification_submissions
   set status = 'submitted',
+      submitted_by = current_user_id,
       submitted_at = now()
   where id = target_submission_id
     and status = 'draft';
