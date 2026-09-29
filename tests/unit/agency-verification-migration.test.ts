@@ -23,7 +23,9 @@ describe("agency verification workflow migration", () => {
   it("defines the verification workflow RPC boundary", () => {
     for (const rpcName of verificationRpcNames) {
       expect(migrationSql).toContain(`function public.${rpcName}`);
-      expect(migrationSql).toContain(`grant execute on function public.${rpcName}`);
+      expect(migrationSql).toContain(
+        `grant execute on function public.${rpcName}`,
+      );
     }
 
     expect(migrationSql).toContain("security definer");
