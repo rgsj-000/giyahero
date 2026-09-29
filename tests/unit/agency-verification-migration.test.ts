@@ -35,13 +35,13 @@ describe("agency verification workflow migration", () => {
     expect(migrationSql).toContain("'draft'");
     expect(migrationSql).toContain("agency_verification_status");
     expect(migrationSql).toMatch(
-      /unique index[^;]+agency_verification_submissions[^;]+where\s*\(?(status\s*=\s*'draft'|'draft'\s*=\s*status)\)?/s,
+      /unique index[^;]+agency_verification_submissions[^;]+where\s*\(?(status\s*=\s*'draft'|'draft'\s*=\s*status)\)?/,
     );
   });
 
   it("allows one document per category and only supported categories", () => {
     expect(migrationSql).toMatch(
-      /unique index[^;]+agency_verification_documents[^;]+submission_id[^;]+document_type/s,
+      /unique index[^;]+agency_verification_documents[^;]+submission_id[^;]+document_type/,
     );
     for (const type of [
       "business_registration",
@@ -55,7 +55,7 @@ describe("agency verification workflow migration", () => {
 
   it("keeps verification mutations behind authenticated RPCs", () => {
     expect(migrationSql).not.toMatch(
-      /create policy[^;]+on public\.agency_verification_(?:submissions|documents)[^;]+for (?:insert|update|delete)/s,
+      /create policy[^;]+on public\.agency_verification_(?:submissions|documents)[^;]+for (?:insert|update|delete)/,
     );
     expect(migrationSql).not.toContain(
       "grant execute on function public.create_verification_draft to anon",
