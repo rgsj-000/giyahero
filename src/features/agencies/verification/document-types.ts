@@ -44,7 +44,9 @@ export function getVerificationCompleteness(
   complete: boolean;
   missingRequired: VerificationDocumentType[];
 } {
-  const uploadedTypes = new Set(documents.map(({ documentType }) => documentType));
+  const uploadedTypes = new Set(
+    documents.map(({ documentType }) => documentType),
+  );
   const missingRequired = requiredDocumentTypes.filter(
     (documentType) => !uploadedTypes.has(documentType),
   );

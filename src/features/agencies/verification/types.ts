@@ -5,11 +5,7 @@ export type VerificationDocumentType =
   | "dot_accreditation";
 
 export type AgencyVerificationStatus =
-  | "draft"
-  | "submitted"
-  | "under_review"
-  | "verified"
-  | "rejected";
+  "draft" | "submitted" | "under_review" | "verified" | "rejected";
 
 export interface VerificationDocumentRecord {
   id: string;
