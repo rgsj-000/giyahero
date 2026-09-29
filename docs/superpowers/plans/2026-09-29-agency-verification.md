@@ -44,6 +44,7 @@
 - Create `tests/integration/agency-verification-workflow.test.ts` — real database state-transition and role tests.
 - Create `tests/integration/agency-verification-storage.test.ts` — private bucket and cross-role storage access tests.
 - Create `tests/integration/helpers/verification-fixtures.ts` — reusable test-user, agency, role, and authenticated Supabase client fixtures.
+- Modify `.github/workflows/ci.yml` — export the real local Supabase URL, anon key, service-role key, and DB URL for integration and E2E jobs; boot local Supabase for E2E.
 
 ### Shared verification feature
 
@@ -69,7 +70,7 @@
 
 ### End-to-end test support
 
-- Create `tests/e2e/helpers/verification-auth.ts` — deterministic authenticated browser setup using test users provisioned through the service-role client.
+- Create `tests/e2e/helpers/verification-auth.ts` — deterministic authenticated browser setup using test users provisioned through a Node-side Supabase service-role client.
 - Modify `tests/e2e/agency-onboarding.spec.ts` only if the new authenticated journey needs to assert the existing post-create redirect more precisely.
 
 ---
@@ -81,6 +82,7 @@
 - Create: `tests/unit/agency-verification-migration.test.ts`
 - Create: `tests/integration/helpers/verification-fixtures.ts`
 - Create: `tests/integration/agency-verification-workflow.test.ts`
+- Modify: `.github/workflows/ci.yml`
 
 **Interfaces:**
 - Consumes: existing `public.has_agency_role(uuid, agency_member_role[])`, `public.has_platform_admin_role(platform_admin_role[])`, `agencies`, `agency_members`, `platform_admin_memberships`, `agency_verification_submissions`, and `agency_verification_documents`.
@@ -92,6 +94,12 @@
   - `public.start_agency_verification_review(target_submission_id uuid) returns void`
   - `public.decide_agency_verification(target_submission_id uuid, target_decision public.agency_verification_status, target_notes text default null) returns void`
   - `agency_verification_status` values exactly `draft`, `submitted`, `under_review`, `verified`, `rejected`.
+- Test helper interfaces in `tests/integration/helpers/verification-fixtures.ts`:
+  - `createTestIdentity(label: string): Promise<{ id: string; email: string; password: string; client: SupabaseClient }>`
+  - `createAgencyFixture(ownerUserId: string, label: string): Promise<string>`
+  - `addAgencyMember(agencyId: string, userId: string, role: AgencyMemberRole): Promise<void>`
+  - `grantPlatformRole(userId: string, role: PlatformAdminRole): Promise<void>`
+  - `deleteTestIdentity(userId: string): Promise<void>`
 
 - [ ] **Step 1: Write the migration structure tests**
 
@@ -105,7 +113,7 @@ Expected: FAIL because `202609290003_agency_verification_workflow.sql` and the r
 
 - [ ] **Step 3: Write failing workflow integration tests**
 
-In `tests/integration/agency-verification-workflow.test.ts`, use fixtures from `tests/integration/helpers/verification-fixtures.ts` to prove:
+In `tests/integration/agency-verification-workflow.test.ts`, use the fixture interfaces above to prove:
 
 1. owner and manager can create/resume one draft;
 2. `booking_staff`, unrelated authenticated users, and anonymous clients cannot create or mutate a draft;
@@ -150,9 +158,25 @@ In `supabase/migrations/202609290003_agency_verification_workflow.sql`:
 
 For the draft race, handle the partial unique-index conflict by re-reading and returning the already-created draft.
 
-- [ ] **Step 6: Run migration unit and workflow integration tests**
+- [ ] **Step 6: Make CI integration tests use real local Supabase credentials**
 
-Run:
+In `.github/workflows/ci.yml`, after `supabase start` and `supabase db reset`, replace the placeholder integration credentials with values exported by the running local stack:
+
+```bash
+eval "$(supabase status -o env)"
+{
+  echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+  echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY"
+  echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+  echo "DATABASE_URL=$DB_URL"
+} >> "$GITHUB_ENV"
+```
+
+The integration test step must inherit these values rather than setting `local-anon` or `local-service-role` placeholders. Never expose the service-role value to a `NEXT_PUBLIC_` variable.
+
+- [ ] **Step 7: Run migration unit and workflow integration tests**
+
+With local Supabase running and the same environment mapping exported, run:
 
 ```bash
 pnpm exec vitest run tests/unit/agency-verification-migration.test.ts
@@ -161,10 +185,10 @@ pnpm exec vitest run tests/integration/agency-verification-workflow.test.ts
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit Task 1**
+- [ ] **Step 8: Commit Task 1**
 
 ```bash
-git add supabase/migrations/202609290003_agency_verification_workflow.sql tests/unit/agency-verification-migration.test.ts tests/integration/helpers/verification-fixtures.ts tests/integration/agency-verification-workflow.test.ts
+git add supabase/migrations/202609290003_agency_verification_workflow.sql tests/unit/agency-verification-migration.test.ts tests/integration/helpers/verification-fixtures.ts tests/integration/agency-verification-workflow.test.ts .github/workflows/ci.yml
 git commit -m "feat: add agency verification workflow"
 ```
 
@@ -275,10 +299,15 @@ git commit -m "feat: secure agency verification documents"
 - Create: `src/features/agencies/verification/document-card.tsx`
 - Create: `tests/e2e/agency-verification.spec.ts`
 - Create: `tests/e2e/helpers/verification-auth.ts`
+- Modify: `.github/workflows/ci.yml`
 
 **Interfaces:**
 - Consumes: Task 1 RPCs; Task 2 document definitions, path builder, private bucket; existing `createServerSupabaseClient()` and `createBrowserSupabaseClient()`.
 - Produces: authenticated route `/agency/[agencyId]/verification` and agency-facing upload/submission workflow.
+- E2E helper interfaces in `tests/e2e/helpers/verification-auth.ts`:
+  - `provisionE2EUser(label: string): Promise<{ id: string; email: string; password: string }>`
+  - `signInThroughUi(page: Page, identity: { email: string; password: string }): Promise<void>`
+  - `removeE2EUser(userId: string): Promise<void>`
 
 - [ ] **Step 1: Write the failing agency E2E tests**
 
@@ -293,11 +322,13 @@ In `tests/e2e/agency-verification.spec.ts`, provision an agency owner through `t
 - submitting changes the UI to `Submitted` and removes/disables upload, replace, and remove controls;
 - a non-manager agency role cannot use verification mutation controls and does not receive sensitive application contents.
 
-Use small test fixture files generated within the test process; do not add real identity or permit documents to the repository.
+Use small in-memory or temporary test fixture files generated by Playwright; do not add real identity or permit documents to the repository.
 
 - [ ] **Step 2: Run the agency E2E test and verify it fails**
 
-Run: `pnpm exec playwright test tests/e2e/agency-verification.spec.ts`
+With local Supabase running, reset, and its real environment values exported to the shell, run:
+
+`pnpm exec playwright test tests/e2e/agency-verification.spec.ts`
 
 Expected: FAIL because the route and components do not exist.
 
@@ -305,7 +336,7 @@ Expected: FAIL because the route and components do not exist.
 
 In `src/app/agency/[agencyId]/verification/page.tsx`:
 
-- require an authenticated user through the server Supabase client;
+- require an authenticated user through `createServerSupabaseClient()`;
 - fetch the current user's membership for `agencyId` and allow the verification workspace only for `owner` or `manager`;
 - fetch the agency and latest/current verification submission through RLS-protected queries;
 - when the agency is `draft` and no submission exists, call idempotent `create_verification_draft(agencyId)` and load that draft;
@@ -334,13 +365,33 @@ The client component must:
 - `router.refresh()` after successful state transitions so the server route remains the canonical source of lifecycle state;
 - use authenticated short-lived signed URLs for any evidence view action; never create public URLs.
 
-- [ ] **Step 6: Run the agency E2E test**
+- [ ] **Step 6: Make the CI E2E job run against local Supabase**
+
+In `.github/workflows/ci.yml`, extend the `e2e` job to:
+
+1. install Supabase CLI using the same setup action already used by the integration job;
+2. run `supabase start` and `supabase db reset` before Playwright;
+3. export the local values with the same mapping used in Task 1:
+
+```bash
+eval "$(supabase status -o env)"
+{
+  echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+  echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY"
+  echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+  echo "DATABASE_URL=$DB_URL"
+} >> "$GITHUB_ENV"
+```
+
+Playwright's `pnpm dev` web server and the Node-side E2E fixture helper must inherit these values.
+
+- [ ] **Step 7: Run the agency E2E test**
 
 Run: `pnpm exec playwright test tests/e2e/agency-verification.spec.ts`
 
 Expected: PASS.
 
-- [ ] **Step 7: Run focused type/lint checks**
+- [ ] **Step 8: Run focused type/lint checks**
 
 Run:
 
@@ -351,10 +402,10 @@ pnpm lint
 
 Expected: PASS.
 
-- [ ] **Step 8: Commit Task 3**
+- [ ] **Step 9: Commit Task 3**
 
 ```bash
-git add src/app/agency/[agencyId]/verification src/features/agencies/verification tests/e2e/agency-verification.spec.ts tests/e2e/helpers/verification-auth.ts
+git add src/app/agency/[agencyId]/verification src/features/agencies/verification tests/e2e/agency-verification.spec.ts tests/e2e/helpers/verification-auth.ts .github/workflows/ci.yml
 git commit -m "feat: add agency verification workspace"
 ```
 
@@ -398,7 +449,7 @@ Expected: FAIL because admin verification routes do not exist.
 
 `src/app/admin/verifications/page.tsx` must:
 
-- require authentication;
+- require authentication through `createServerSupabaseClient()`;
 - query the current user's `platform_admin_memberships` through existing self-read RLS;
 - admit only `super_admin` and `agency_verifier`;
 - fetch `submitted` and `under_review` submissions with associated agency name and document count;
@@ -482,7 +533,7 @@ Expected: PASS.
 
 - [ ] **Step 3: Run the complete repository verification suite**
 
-Run in this order:
+With local Supabase running, reset, and real local credentials exported to the shell, run in this order:
 
 ```bash
 pnpm format:check
@@ -504,7 +555,7 @@ Confirm from the diff that:
 - no service-role key appears in client code;
 - no anonymous policy exposes submissions/documents;
 - agency verification decisions still require the database RPC role check;
-- public agency visibility remains limited to `agencies.status = 'verified'` plus existing member/admin exceptions;
+- public agency visibility remains limited to `agencies.status = 'verified'` plus the explicitly approved member/verifier read exceptions;
 - DOT accreditation remains optional and visually distinct from GiyaHero verification.
 
 - [ ] **Step 5: Commit final test/regression adjustments**
@@ -512,7 +563,7 @@ Confirm from the diff that:
 If Step 1 or regression fixes changed files:
 
 ```bash
-git add tests src supabase
+git add tests src supabase .github/workflows/ci.yml
 git commit -m "test: verify agency verification journey"
 ```
 
