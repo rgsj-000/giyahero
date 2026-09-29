@@ -54,6 +54,7 @@ No duplicate tables should be introduced for concepts already represented above.
 - DOT API integration
 - automatic expiration monitoring
 - automated reverification scheduling
+- rejected-application resubmission
 - payment processing
 - package publishing UI itself
 - public agency profile redesign
@@ -86,7 +87,7 @@ May:
 - create or resume an editable draft submission
 - upload, replace, and remove draft documents
 - formally submit the application
-- view previous and current submissions
+- view the current submission
 - view review status and decision notes
 
 ### Agency Manager
@@ -106,7 +107,7 @@ A user with `agency_verifier` or `super_admin` may:
 - start review
 - approve
 - reject
-- view previous submissions and decision history
+- view submission decision information
 
 Other platform roles do not gain verification decision privileges unless explicitly added later.
 
@@ -160,6 +161,7 @@ The document rows belong to a verification submission. Agencies therefore need a
 - Rejection sets the submission to `rejected` and sets the agency to `rejected`.
 - Rejection requires non-empty decision notes.
 - A terminal submission is immutable.
+- Release 1 does not permit a rejected agency to create a new verification submission.
 
 ## 7. Data Model Changes
 
@@ -178,7 +180,7 @@ Adjust the current structure so that:
 - `reviewed_by` and `reviewed_at` remain nullable until a final decision
 - `decision_notes` remains nullable for approval but is mandatory for rejection through the decision RPC
 
-Recommended consistency checks should guarantee sensible timestamp/state combinations where practical without making future migrations unnecessarily difficult.
+Consistency constraints should enforce the Release 1 lifecycle where practical, particularly that draft rows have no submission/review timestamps, submitted and under-review rows have `submitted_at`, and terminal rows have reviewer and review timestamps.
 
 ### `agency_verification_documents`
 
@@ -206,9 +208,9 @@ Create a private Supabase Storage bucket named:
 
 Objects use an agency-scoped path:
 
-`agency/{agencyId}/{submissionId}/{documentId}/{sanitizedFilename}`
+`agency/{agencyId}/{submissionId}/{documentType}/{uploadUuid}-{sanitizedFilename}`
 
-The database row stores the resulting path.
+`uploadUuid` is generated before upload and is independent of the database-generated verification document row ID. The database row stores the resulting storage path.
 
 ### Storage Rules
 
@@ -231,11 +233,13 @@ Responsibilities:
 
 - require authentication
 - require agency owner or manager role
-- reuse the existing editable draft if one already exists
-- otherwise create one new draft submission
+- return the existing draft if one already exists
+- otherwise require the parent agency status to be `draft`
+- create exactly one new draft submission
 - return the submission ID
+- reject draft creation when the agency is already `submitted`, `under_review`, `verified`, `rejected`, or `suspended`
 
-The RPC must prevent multiple simultaneous editable drafts for the same agency.
+The RPC must prevent multiple simultaneous editable drafts for the same agency. A partial unique index or equivalent database guarantee should back this invariant rather than relying only on application checks.
 
 ### `register_verification_document(...)`
 
@@ -247,7 +251,9 @@ Responsibilities:
 - register storage metadata after successful object upload
 - prevent a user from registering metadata against another agency or submission
 
-The UI may treat one current file per required category as the normal path. Replacing a document removes the old draft object and metadata before or as part of replacement handling.
+The UI treats one current file per document category as the normal Release 1 path. The database should enforce at most one document row per `(submission_id, document_type)` so concurrent clients cannot create duplicate active files for a category.
+
+Replacing a document is an application-level compensated workflow: remove the old draft object and metadata, upload the replacement, then register the replacement metadata. If replacement fails after the old document is removed, the category simply returns to incomplete and the user can upload again; the submission remains a draft.
 
 ### `remove_verification_document(document_id)`
 
@@ -257,7 +263,7 @@ Responsibilities:
 - require the parent submission to remain `draft`
 - delete the metadata record
 
-Storage object deletion must also be completed by the application workflow. Failure handling must not leave the UI claiming a file is absent while the database still references it.
+For normal removal, the application should delete the storage object first and remove metadata only after storage deletion succeeds. If metadata removal then fails, the database may temporarily reference a missing object; the UI must surface the error and allow a retry or replacement rather than falsely treating the operation as fully successful.
 
 ### `submit_agency_verification(submission_id)`
 
@@ -265,6 +271,7 @@ Responsibilities:
 
 - require owner or manager role for the parent agency
 - require submission status `draft`
+- require parent agency status `draft`
 - confirm all required document categories are represented
 - set submission status to `submitted`
 - set `submitted_at = now()`
@@ -277,6 +284,7 @@ Responsibilities:
 
 - require `super_admin` or `agency_verifier`
 - require status `submitted`
+- require parent agency status `submitted`
 - set submission status to `under_review`
 - set agency status to `under_review`
 - perform both changes atomically
@@ -289,14 +297,15 @@ Responsibilities:
 
 - require `super_admin` or `agency_verifier`
 - require submission status `under_review`
+- require parent agency status `under_review`
 - allow only `verified` or `rejected` as the decision
 - require trimmed non-empty notes for rejection
 - set `reviewed_by = auth.uid()`
 - set `reviewed_at = now()`
 - set the submission status
 - update the agency status in the same transaction
-- for approval, set `agencies.verified_at = now()` and clear stale rejection/suspension state as applicable
-- for rejection, leave `verified_at` null
+- for approval, set `agencies.verified_at = now()` and `agencies.suspended_at = null`
+- for rejection, set `agencies.verified_at = null` and `agencies.suspended_at = null`
 
 ## 10. RLS Strategy
 
@@ -327,7 +336,7 @@ The route is authenticated and must confirm the current user has owner or manage
 4. Upload cards for each supported document category
 5. Submission summary
 6. Primary action area
-7. Previous/decision information when relevant
+7. Decision information when relevant
 
 ### Draft Experience
 
@@ -369,7 +378,7 @@ The page shows:
 - decision timestamp
 - decision notes
 
-Release 1 does not automatically reopen a rejected submission. A later iteration may add explicit resubmission/reverification behavior. Until then, rejection is a terminal state for that submission and a new submission flow can be introduced as a follow-up feature.
+Rejection is terminal for Release 1. The screen does not offer a new application or resubmission action.
 
 ## 12. Admin Verification Queue
 
@@ -406,7 +415,7 @@ The screen shows:
 - uploaded verification documents
 - secure document view/download actions
 - current status
-- decision history available on the submission
+- final decision information when present
 
 ### Actions
 
@@ -421,7 +430,7 @@ For `under_review`:
 
 Reject Agency opens a notes field and requires a reason before confirmation.
 
-Approval should also require an explicit confirmation interaction because it changes public trust status.
+Approval also requires an explicit confirmation interaction because it changes public trust status.
 
 ## 14. Data Flow
 
@@ -442,7 +451,7 @@ Approval should also require an explicit confirmation interaction because it cha
 1. Authorized verifier opens `/admin/verifications`.
 2. Queue loads submitted/under-review applications.
 3. Verifier opens a submission.
-4. Documents are accessed through private authenticated/signed access.
+4. Documents are accessed through private authenticated or short-lived signed access.
 5. Verifier starts review.
 6. RPC moves submission and agency to `under_review` atomically.
 7. Verifier approves or rejects.
@@ -453,7 +462,7 @@ Approval should also require an explicit confirmation interaction because it cha
 
 ### Unauthorized Access
 
-Return/redirect without leaking whether inaccessible agency or submission records exist. The database still enforces access even if route guards fail.
+Return or redirect without leaking whether inaccessible agency or submission records exist. The database still enforces access even if route guards fail.
 
 ### Incomplete Submission
 
@@ -465,19 +474,23 @@ Do not register database metadata for an object that failed to upload.
 
 ### Metadata Registration Failure After Storage Upload
 
-Attempt cleanup of the newly uploaded object and surface a recoverable error. The user must not see the category as complete unless the database registration succeeds.
+Attempt cleanup of the newly uploaded object and surface a recoverable error. The user must not see the category as complete unless database registration succeeds.
 
 ### Storage Deletion Failure
 
-Do not silently remove metadata if storage cleanup cannot be completed through the intended workflow. Surface an error and preserve a consistent visible state.
+Do not remove metadata when the initial storage deletion fails. Surface an error and keep the document visible.
 
-### Stale UI / Concurrent Transition
+### Metadata Deletion Failure After Storage Deletion
 
-RPCs verify current status before every transition. A stale browser cannot re-submit, re-review, or overwrite a completed decision.
+Surface an error and preserve enough information to retry cleanup or replace the category. Because Supabase Storage and PostgreSQL are not one transaction, the implementation uses explicit compensation and must never report full success when only one side completed.
+
+### Stale UI or Concurrent Transition
+
+RPCs verify current status before every transition. A stale browser cannot resubmit, rereview, or overwrite a completed decision.
 
 ### Duplicate Decision
 
-A final decision is accepted only when the submission is currently `under_review`. Repeated approval/rejection attempts fail safely.
+A final decision is accepted only when the submission is currently `under_review`. Repeated approval or rejection attempts fail safely.
 
 ## 16. Auditability
 
@@ -498,28 +511,31 @@ Only `agencies.status = 'verified'` may qualify an agency for a GiyaHero verifie
 
 Private verification documents, internal decision notes, verifier identity, and review metadata are never exposed as part of the public agency object.
 
-Future package publishing logic must check agency verification on the server/database boundary, not merely hide a Publish button in the UI.
+Future package publishing logic must check agency verification on the server or database boundary, not merely hide a Publish button in the UI.
 
 ## 18. Testing Strategy
 
 The implementation follows the repository's existing unit, Supabase integration, and Playwright E2E test structure.
 
-### Database / Integration Tests
+### Database and Integration Tests
 
 Cover at minimum:
 
 - unauthenticated users cannot create drafts
 - unrelated agency members cannot read or mutate another agency's application
-- owner can create/resume one draft
-- manager can create/resume draft
+- owner can create or resume one draft
+- manager can create or resume one draft
 - non-manager agency roles cannot mutate verification
+- a second simultaneous draft cannot be created for the same agency
+- a rejected agency cannot create a new Release 1 draft
+- one document category cannot have duplicate active rows in one submission
 - required categories are enforced on submission
 - draft can be edited
 - submitted application cannot be edited
-- owner/manager cannot invoke verifier transitions
+- owner or manager cannot invoke verifier transitions
 - non-verifier platform admins cannot make verification decisions
 - verifier can start review
-- only under-review application can receive a decision
+- only an under-review application can receive a decision
 - rejection requires notes
 - approval updates both submission and agency atomically
 - rejection updates both submission and agency atomically
@@ -531,7 +547,7 @@ Cover isolated helpers introduced by the feature, such as:
 
 - supported document type metadata
 - completeness calculation used by the UI
-- filename/path sanitization helper if implemented in application code
+- filename and path sanitization helper if implemented in application code
 - status presentation mapping
 
 Do not duplicate database authorization rules as client-only unit logic.
@@ -555,10 +571,12 @@ Storage-heavy E2E interactions may use the repository's existing local Supabase 
 Agency Verification Release 1 is complete when all of the following are true:
 
 - a newly onboarded agency lands on a functional verification page
-- an owner or manager can create/resume exactly one editable verification draft
+- an owner or manager can create or resume exactly one editable verification draft
 - required files are stored privately and metadata is persisted correctly
+- each document category has at most one active row per submission
 - a draft cannot be submitted without every required category
 - submitted applications become immutable to agency users
+- rejected applications cannot be resubmitted in Release 1
 - only `super_admin` and `agency_verifier` can review and decide applications
 - approval changes both the submission and agency to `verified` atomically
 - rejection changes both the submission and agency to `rejected` atomically and records a reason
@@ -571,7 +589,7 @@ Agency Verification Release 1 is complete when all of the following are true:
 
 This feature should stay focused on the manual human-reviewed MVP.
 
-Do not add OCR, AI document extraction, external government integrations, package publishing, booking logic, payment logic, or generalized moderation features as part of this implementation.
+Do not add OCR, AI document extraction, external government integrations, rejected-application resubmission, package publishing, booking logic, payment logic, or generalized moderation features as part of this implementation.
 
 The intended vertical slice is:
 
