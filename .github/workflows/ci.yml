@@ -21,11 +21,6 @@ jobs:
         with:
           name: pnpm-lock
           path: pnpm-lock.yaml
-      - name: Show verification test formatting diff
-        run: |
-          pnpm exec prettier tests/e2e/agency-verification.spec.ts --write
-          git diff -- tests/e2e/agency-verification.spec.ts
-          git checkout -- tests/e2e/agency-verification.spec.ts
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
