@@ -264,10 +264,12 @@ describe("agency verification private storage", () => {
       .download(paths[0]);
     expect(downloadError).toBeNull();
 
-    const { error: deleteError } = await owner.client.storage
+    await owner.client.storage.from(BUCKET).remove([paths[0]]);
+
+    const { error: downloadAfterDeleteAttemptError } = await owner.client.storage
       .from(BUCKET)
-      .remove([paths[0]]);
-    expect(deleteError).not.toBeNull();
+      .download(paths[0]);
+    expect(downloadAfterDeleteAttemptError).toBeNull();
   });
 
   it("allows verifier roles to read submitted evidence but denies other platform roles", async () => {
