@@ -26,7 +26,10 @@ afterAll(async () => {
 
 describe("agency verification audit trail", () => {
   it("records the user who formally submits the application", async () => {
-    const agencyId = await createAgencyFixture(owner.id, "Submitter audit agency");
+    const agencyId = await createAgencyFixture(
+      owner.id,
+      "Submitter audit agency",
+    );
     await addAgencyMember(agencyId, manager.id, "manager");
 
     const { data: submissionId, error: draftError } = await owner.client.rpc(
@@ -43,15 +46,18 @@ describe("agency verification audit trail", () => {
     ]) {
       const documentId = randomUUID();
       const filename = `${documentType}.pdf`;
-      const { error } = await owner.client.rpc("register_verification_document", {
-        target_submission_id: submissionId,
-        target_document_id: documentId,
-        target_document_type: documentType,
-        target_storage_path: `agency/${agencyId}/${submissionId}/${documentId}/${filename}`,
-        target_original_name: filename,
-        target_mime_type: "application/pdf",
-        target_size_bytes: 128,
-      });
+      const { error } = await owner.client.rpc(
+        "register_verification_document",
+        {
+          target_submission_id: submissionId,
+          target_document_id: documentId,
+          target_document_type: documentType,
+          target_storage_path: `agency/${agencyId}/${submissionId}/${documentId}/${filename}`,
+          target_original_name: filename,
+          target_mime_type: "application/pdf",
+          target_size_bytes: 128,
+        },
+      );
       expect(error).toBeNull();
     }
 
