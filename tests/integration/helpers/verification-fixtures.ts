@@ -1,18 +1,11 @@
 import { randomUUID } from "node:crypto";
-import {
-  createClient,
-  type SupabaseClient,
-} from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { parseEnv } from "@/infrastructure/config/env";
 
 const env = parseEnv(process.env);
 
 export type AgencyMemberRole =
-  | "owner"
-  | "manager"
-  | "booking_staff"
-  | "content_staff"
-  | "read_only";
+  "owner" | "manager" | "booking_staff" | "content_staff" | "read_only";
 
 export type PlatformAdminRole =
   | "super_admin"
@@ -144,10 +137,12 @@ export async function grantPlatformRole(
   userId: string,
   role: PlatformAdminRole,
 ): Promise<void> {
-  const { error } = await adminClient.from("platform_admin_memberships").insert({
-    user_id: userId,
-    role,
-  });
+  const { error } = await adminClient
+    .from("platform_admin_memberships")
+    .insert({
+      user_id: userId,
+      role,
+    });
 
   if (error) throw error;
 }
@@ -176,7 +171,8 @@ export async function deleteTestIdentity(userId: string): Promise<void> {
     .select("agency_id")
     .eq("uploaded_by", userId);
   if (documentError) throw documentError;
-  for (const document of documents ?? []) agencyIds.add(document.agency_id as string);
+  for (const document of documents ?? [])
+    agencyIds.add(document.agency_id as string);
 
   if (agencyIds.size > 0) {
     const { error: agencyDeleteError } = await adminClient
