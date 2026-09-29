@@ -26,11 +26,7 @@ export type VerificationDocument = {
 };
 
 export type VerificationSubmissionStatus =
-  | "draft"
-  | "submitted"
-  | "under_review"
-  | "verified"
-  | "rejected";
+  "draft" | "submitted" | "under_review" | "verified" | "rejected";
 
 export type AgencyVerificationSubmission = {
   id: string;
