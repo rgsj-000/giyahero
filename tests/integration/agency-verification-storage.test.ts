@@ -53,9 +53,12 @@ async function createForeignAgency(label: string) {
 }
 
 async function createDraftAs(identity: Identity, agencyId: string) {
-  const { data, error } = await identity.client.rpc("create_verification_draft", {
-    target_agency_id: agencyId,
-  });
+  const { data, error } = await identity.client.rpc(
+    "create_verification_draft",
+    {
+      target_agency_id: agencyId,
+    },
+  );
   expect(error).toBeNull();
   return data as string;
 }
