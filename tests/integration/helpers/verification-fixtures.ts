@@ -5,11 +5,7 @@ import { parseEnv } from "@/infrastructure/config/env";
 const env = parseEnv(process.env);
 
 export type AgencyMemberRole =
-  | "owner"
-  | "manager"
-  | "booking_staff"
-  | "content_staff"
-  | "read_only";
+  "owner" | "manager" | "booking_staff" | "content_staff" | "read_only";
 
 export type PlatformAdminRole =
   | "super_admin"
