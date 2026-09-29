@@ -115,9 +115,7 @@ export function AgencyOnboardingForm() {
                 2. Submit business verification documents through the private
                 verification flow.
               </p>
-              <p>
-                3. Publish packages after GiyaHero approves the agency.
-              </p>
+              <p>3. Publish packages after GiyaHero approves the agency.</p>
             </div>
           </section>
 
@@ -128,7 +126,9 @@ export function AgencyOnboardingForm() {
                   Agency name
                   <input
                     className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
-                    onChange={(event) => handleAgencyNameChange(event.target.value)}
+                    onChange={(event) =>
+                      handleAgencyNameChange(event.target.value)
+                    }
                     required
                     value={agencyName}
                   />
@@ -219,7 +219,9 @@ export function AgencyOnboardingForm() {
                 disabled={isSubmitting}
                 type="submit"
               >
-                {isSubmitting ? "Creating workspace…" : "Create agency workspace"}
+                {isSubmitting
+                  ? "Creating workspace…"
+                  : "Create agency workspace"}
               </button>
             </form>
           </section>
