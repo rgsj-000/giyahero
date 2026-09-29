@@ -88,7 +88,9 @@ export function DocumentCard({
 
       {editable ? (
         <label className="mt-4 block text-sm font-semibold text-emerald-800">
-          {document ? `Replace ${definition.label}` : `Upload ${definition.label}`}
+          {document
+            ? `Replace ${definition.label}`
+            : `Upload ${definition.label}`}
           <input
             accept="application/pdf,image/jpeg,image/png,image/webp"
             aria-label={`Upload ${definition.label}`}
