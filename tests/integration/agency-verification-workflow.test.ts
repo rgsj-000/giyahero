@@ -49,18 +49,18 @@ async function registerDocument(
   agencyId: string,
   documentType: string,
 ) {
-  const documentId = randomUUID();
+  const uploadId = randomUUID();
   const { error } = await owner.client.rpc("register_verification_document", {
     target_submission_id: submissionId,
-    target_document_id: documentId,
+    target_document_id: uploadId,
     target_document_type: documentType,
-    target_storage_path: `agency/${agencyId}/${submissionId}/${documentId}/evidence.pdf`,
+    target_storage_path: `agency/${agencyId}/${submissionId}/${documentType}/${uploadId}-evidence.pdf`,
     target_original_name: "evidence.pdf",
     target_mime_type: "application/pdf",
     target_size_bytes: 128,
   });
   expect(error).toBeNull();
-  return documentId;
+  return uploadId;
 }
 
 async function makeCompleteDraft(agencyId: string) {
@@ -130,9 +130,10 @@ describe("agency verification workflow", () => {
     expect(second.error).toBeNull();
     expect(first.data).toBe(second.data);
 
-    const managerResult = await manager.client.rpc("create_verification_draft", {
-      target_agency_id: agencyId,
-    });
+    const managerResult = await manager.client.rpc(
+      "create_verification_draft",
+      { target_agency_id: agencyId },
+    );
     expect(managerResult.error).toBeNull();
     expect(managerResult.data).toBe(first.data);
 
@@ -157,16 +158,11 @@ describe("agency verification workflow", () => {
     }
   });
 
-  it("requires all three required document categories before submission and submits atomically", async () => {
+  it("requires all required documents, submits atomically, and freezes document mutation", async () => {
     const agencyId = await createAgency("submission");
     const submissionId = await createDraft(agencyId);
 
-    await registerDocument(
-      submissionId,
-      agencyId,
-      "business_registration",
-    );
-
+    await registerDocument(submissionId, agencyId, "business_registration");
     const incomplete = await owner.client.rpc("submit_agency_verification", {
       target_submission_id: submissionId,
     });
@@ -199,13 +195,14 @@ describe("agency verification workflow", () => {
     expect(submission?.submitted_at).toBeTruthy();
     expect(agency?.status).toBe("submitted");
 
+    const uploadId = randomUUID();
     const lateDocument = await owner.client.rpc(
       "register_verification_document",
       {
         target_submission_id: submissionId,
-        target_document_id: randomUUID(),
+        target_document_id: uploadId,
         target_document_type: "dot_accreditation",
-        target_storage_path: `agency/${agencyId}/${submissionId}/${randomUUID()}/dot.pdf`,
+        target_storage_path: `agency/${agencyId}/${submissionId}/dot_accreditation/${uploadId}-dot.pdf`,
         target_original_name: "dot.pdf",
         target_mime_type: "application/pdf",
         target_size_bytes: 128,
@@ -217,13 +214,10 @@ describe("agency verification workflow", () => {
   it("allows only verifier roles to start review and updates both states", async () => {
     const agencyId = await createAgency("review-start");
     const submissionId = await makeCompleteDraft(agencyId);
-    expect(
-      (
-        await owner.client.rpc("submit_agency_verification", {
-          target_submission_id: submissionId,
-        })
-      ).error,
-    ).toBeNull();
+    const submitted = await owner.client.rpc("submit_agency_verification", {
+      target_submission_id: submissionId,
+    });
+    expect(submitted.error).toBeNull();
 
     for (const client of [owner.client, moderator.client]) {
       const { error } = await client.rpc("start_agency_verification_review", {
@@ -316,7 +310,7 @@ describe("agency verification workflow", () => {
     expect(unchanged?.reviewed_by).toBe(verifier.id);
   });
 
-  it("rejects whitespace notes, stores trimmed notes, and blocks a fresh draft after rejection", async () => {
+  it("rejects whitespace notes, trims rejection notes, and blocks a fresh draft", async () => {
     const agencyId = await createAgency("rejection");
     const submissionId = await makeCompleteDraft(agencyId);
     await owner.client.rpc("submit_agency_verification", {
