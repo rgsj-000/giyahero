@@ -39,12 +39,22 @@ async function createAgency(label: string) {
   return agencyId;
 }
 
-async function createDraft(agencyId: string) {
-  const { data, error } = await owner.client.rpc("create_verification_draft", {
+async function createForeignAgency(label: string) {
+  const agencyId = await createAgencyFixture(outsider.id, label);
+  agencyIds.push(agencyId);
+  return agencyId;
+}
+
+async function createDraftAs(identity: Identity, agencyId: string) {
+  const { data, error } = await identity.client.rpc("create_verification_draft", {
     target_agency_id: agencyId,
   });
   expect(error).toBeNull();
   return data as string;
+}
+
+async function createDraft(agencyId: string) {
+  return createDraftAs(owner, agencyId);
 }
 
 function makePath(
@@ -182,8 +192,8 @@ describe("agency verification private storage", () => {
       expect(upload.error).toBeNull();
     }
 
-    const otherAgencyId = await createAgency("storage-other");
-    const otherSubmissionId = await createDraft(otherAgencyId);
+    const otherAgencyId = await createForeignAgency("storage-other");
+    const otherSubmissionId = await createDraftAs(outsider, otherAgencyId);
     const anonymous = createAnonymousTestClient();
 
     for (const client of [bookingStaff.client, outsider.client, anonymous]) {
@@ -207,15 +217,14 @@ describe("agency verification private storage", () => {
       .upload(foreignPath, new Uint8Array([1, 2, 3]), {
         contentType: "application/pdf",
       });
-    expect(foreignUpload.error).toBeNull();
-    cleanupPaths.push(foreignPath);
+    expect(foreignUpload.error).not.toBeNull();
   });
 
   it("denies malformed and cross-agency paths without policy errors leaking access", async () => {
     const agencyId = await createAgency("storage-malformed");
     const submissionId = await createDraft(agencyId);
-    const otherAgencyId = await createAgency("storage-cross");
-    const otherSubmissionId = await createDraft(otherAgencyId);
+    const otherAgencyId = await createForeignAgency("storage-cross");
+    const otherSubmissionId = await createDraftAs(outsider, otherAgencyId);
 
     const malformedPaths = [
       "agency/not-a-uuid/nope/business_permit/file.pdf",
