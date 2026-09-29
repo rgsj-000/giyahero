@@ -67,7 +67,9 @@ export function AgencyVerificationWorkspace({
       .remove([document.storage_path]);
 
     if (storageError) {
-      throw new Error(`Could not remove the stored file: ${storageError.message}`);
+      throw new Error(
+        `Could not remove the stored file: ${storageError.message}`,
+      );
     }
 
     const { error: metadataError } = await supabase.rpc(
@@ -242,7 +244,9 @@ export function AgencyVerificationWorkspace({
         {status === "rejected" && submission?.decision_notes ? (
           <section className="mt-8 rounded-2xl border border-rose-200 bg-rose-50 p-5 text-rose-900">
             <p className="font-semibold">Verification was not approved</p>
-            <p className="mt-2 text-sm leading-6">{submission.decision_notes}</p>
+            <p className="mt-2 text-sm leading-6">
+              {submission.decision_notes}
+            </p>
           </section>
         ) : null}
 
