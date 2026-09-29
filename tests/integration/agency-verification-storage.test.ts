@@ -1,5 +1,12 @@
 import { randomUUID } from "node:crypto";
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+} from "vitest";
 import { buildVerificationStoragePath } from "@/features/agencies/verification/storage-path";
 import type { VerificationDocumentType } from "@/features/agencies/verification/types";
 import {
@@ -167,7 +174,8 @@ afterAll(async () => {
 
 describe("agency verification private storage", () => {
   it("creates a private bucket with the Release 1 limits", async () => {
-    const { data, error } = await verificationAdminClient.storage.getBucket(BUCKET);
+    const { data, error } =
+      await verificationAdminClient.storage.getBucket(BUCKET);
 
     expect(error).toBeNull();
     expect(data?.public).toBe(false);
