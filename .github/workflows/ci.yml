@@ -21,11 +21,6 @@ jobs:
         with:
           name: pnpm-lock
           path: pnpm-lock.yaml
-      - name: Show verification workspace formatting diff
-        run: |
-          pnpm exec prettier src/features/agencies/verification/agency-verification-workspace.tsx src/features/agencies/verification/document-card.tsx src/features/agencies/verification/types.ts --write
-          git diff -- src/features/agencies/verification/agency-verification-workspace.tsx src/features/agencies/verification/document-card.tsx src/features/agencies/verification/types.ts
-          git checkout -- src/features/agencies/verification/agency-verification-workspace.tsx src/features/agencies/verification/document-card.tsx src/features/agencies/verification/types.ts
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
