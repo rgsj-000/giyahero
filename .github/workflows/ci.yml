@@ -21,7 +21,11 @@ jobs:
         with:
           name: pnpm-lock
           path: pnpm-lock.yaml
-      - run: pnpm format:check
+      - run: |
+          cp src/features/agencies/components/agency-onboarding-form.tsx /tmp/agency-onboarding-form.tsx
+          pnpm exec prettier --write src/features/agencies/components/agency-onboarding-form.tsx
+          git diff --no-index -- /tmp/agency-onboarding-form.tsx src/features/agencies/components/agency-onboarding-form.tsx || true
+          exit 1
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
