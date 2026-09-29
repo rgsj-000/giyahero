@@ -52,6 +52,10 @@ describe("agency verification workflow migration", () => {
     expect(migrationSql).toContain("submission_id, document_type");
   });
 
+  it("records the authenticated user at formal submission time", () => {
+    expect(migrationSql).toContain("submitted_by = current_user_id");
+  });
+
   it("does not add direct permissive writes to verification tables", () => {
     expect(migrationSql).not.toMatch(
       /on public\.agency_verification_submissions\s+for\s+(insert|update|delete)/,
