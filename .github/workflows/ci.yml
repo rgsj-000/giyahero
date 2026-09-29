@@ -43,13 +43,19 @@ jobs:
       - run: pnpm install --no-frozen-lockfile
       - run: supabase start
       - run: supabase db reset
+      - name: Export local Supabase credentials
+        shell: bash
+        run: |
+          eval "$(supabase status -o env)"
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+            echo "DATABASE_URL=$DB_URL"
+          } >> "$GITHUB_ENV"
       - run: pnpm test:integration
         env:
           NODE_ENV: test
-          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: local-anon
-          SUPABASE_SERVICE_ROLE_KEY: local-service-role
-          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
 
   e2e:
     runs-on: ubuntu-latest
