@@ -17,6 +17,10 @@ jobs:
         with:
           node-version: 22
       - run: pnpm install --no-frozen-lockfile
+      - name: Print verification test formatting diff
+        run: |
+          pnpm exec prettier --write tests/integration/agency-verification-workflow.test.ts tests/integration/helpers/verification-fixtures.ts
+          git diff -- tests/integration/agency-verification-workflow.test.ts tests/integration/helpers/verification-fixtures.ts
       - uses: actions/upload-artifact@v4
         with:
           name: pnpm-lock
