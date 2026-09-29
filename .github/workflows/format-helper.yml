@@ -1,0 +1,32 @@
+name: format-helper
+
+on:
+  pull_request:
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm install --no-frozen-lockfile
+      - name: Format task one files
+        run: >-
+          pnpm exec prettier --write
+          docs/superpowers/plans/2026-09-29-agency-verification.md
+          tests/integration/agency-verification-workflow.test.ts
+          tests/integration/helpers/verification-fixtures.ts
+          tests/unit/agency-verification-migration.test.ts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prettier-task-one
+          path: |
+            docs/superpowers/plans/2026-09-29-agency-verification.md
+            tests/integration/agency-verification-workflow.test.ts
+            tests/integration/helpers/verification-fixtures.ts
+            tests/unit/agency-verification-migration.test.ts
