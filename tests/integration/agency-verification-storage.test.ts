@@ -1,12 +1,5 @@
 import { randomUUID } from "node:crypto";
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  describe,
-  expect,
-  it,
-} from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { buildVerificationStoragePath } from "@/features/agencies/verification/storage-path";
 import type { VerificationDocumentType } from "@/features/agencies/verification/types";
 import {
