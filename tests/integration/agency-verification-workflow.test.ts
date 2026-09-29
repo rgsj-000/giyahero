@@ -330,14 +330,11 @@ describe("agency verification workflow", () => {
     );
     expect(whitespace.error).not.toBeNull();
 
-    const rejected = await superAdmin.client.rpc(
-      "decide_agency_verification",
-      {
-        target_submission_id: submissionId,
-        target_decision: "rejected",
-        target_notes: "  Permit could not be validated.  ",
-      },
-    );
+    const rejected = await superAdmin.client.rpc("decide_agency_verification", {
+      target_submission_id: submissionId,
+      target_decision: "rejected",
+      target_notes: "  Permit could not be validated.  ",
+    });
     expect(rejected.error).toBeNull();
 
     const { data: submission } = await verificationAdminClient
