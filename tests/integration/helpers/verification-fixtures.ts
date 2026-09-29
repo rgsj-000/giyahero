@@ -108,11 +108,13 @@ export async function addAgencyMember(
   userId: string,
   role: AgencyMemberRole,
 ): Promise<void> {
-  const { error } = await verificationAdminClient.from("agency_members").insert({
-    agency_id: agencyId,
-    user_id: userId,
-    role,
-  });
+  const { error } = await verificationAdminClient
+    .from("agency_members")
+    .insert({
+      agency_id: agencyId,
+      user_id: userId,
+      role,
+    });
 
   if (error) throw error;
 }
