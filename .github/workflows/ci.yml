@@ -21,11 +21,7 @@ jobs:
         with:
           name: pnpm-lock
           path: pnpm-lock.yaml
-      - name: Print admin verification test Prettier diff
-        run: |
-          pnpm exec prettier --write tests/e2e/admin-verification.spec.ts
-          git diff -- tests/e2e/admin-verification.spec.ts
-          exit 1
+      - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
