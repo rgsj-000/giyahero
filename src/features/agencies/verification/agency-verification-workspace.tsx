@@ -8,6 +8,7 @@ import {
   VERIFICATION_DOCUMENT_TYPES,
 } from "./document-types";
 import { DocumentCard } from "./document-card";
+import { removeVerificationDocumentSafely } from "./document-removal";
 import { buildVerificationStoragePath } from "./storage-path";
 import type {
   AgencyVerificationAgency,
@@ -62,30 +63,40 @@ export function AgencyVerificationWorkspace({
 
   async function removeDocument(document: VerificationDocument) {
     const supabase = createBrowserSupabaseClient();
-    const { error: storageError } = await supabase.storage
-      .from(BUCKET)
-      .remove([document.storage_path]);
+    const result = await removeVerificationDocumentSafely({
+      documentId: document.id,
+      fallbackStoragePath: document.storage_path,
+      removeMetadata: async (documentId) => {
+        const { data, error } = await supabase.rpc(
+          "remove_verification_document",
+          { target_document_id: documentId },
+        );
 
-    if (storageError) {
-      throw new Error(
-        `Could not remove the stored file: ${storageError.message}`,
-      );
-    }
+        if (error) {
+          throw new Error(
+            `Could not clear the verification record: ${error.message}`,
+          );
+        }
 
-    const { error: metadataError } = await supabase.rpc(
-      "remove_verification_document",
-      { target_document_id: document.id },
-    );
-
-    if (metadataError) {
-      throw new Error(
-        "The file was removed, but its verification record could not be cleared. Retry the removal before uploading a replacement.",
-      );
-    }
+        return typeof data === "string" ? data : null;
+      },
+      removeStorage: async (storagePath) => {
+        const { error } = await supabase.storage
+          .from(BUCKET)
+          .remove([storagePath]);
+        if (error) throw error;
+      },
+    });
 
     setDocuments((current) =>
       current.filter((item) => item.id !== document.id),
     );
+
+    if (result.storageCleanupError) {
+      setErrorMessage(
+        "The verification record was removed, but the old private file could not be cleaned up. You can continue; the file is no longer part of this application.",
+      );
+    }
   }
 
   async function handleUpload(
