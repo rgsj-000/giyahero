@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import {
   getE2EAdminClient,
   provisionE2EUser,
@@ -63,7 +63,7 @@ test("agency onboarding continues through verification approval", async ({
   const suffix = randomUUID().slice(0, 8);
   const agencyName = `Journey Quezon Tours ${suffix}`;
   let agencyId: string | null = null;
-  let verifierPage: Awaited<ReturnType<typeof browser.newPage>> | null = null;
+  let verifierPage: Page | null = null;
 
   try {
     const admin = getE2EAdminClient();
