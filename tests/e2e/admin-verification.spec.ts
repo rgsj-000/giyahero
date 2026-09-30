@@ -173,8 +173,12 @@ test("agency verifier sees submitted applications in the queue", async ({
     await expect(
       page.getByRole("heading", { name: /agency verifications/i }),
     ).toBeVisible();
-    const row = page.getByRole("article").filter({ hasText: fixture.agencyName });
-    await expect(row.getByText(fixture.agencyName, { exact: true })).toBeVisible();
+    const row = page
+      .getByRole("article")
+      .filter({ hasText: fixture.agencyName });
+    await expect(
+      row.getByText(fixture.agencyName, { exact: true }),
+    ).toBeVisible();
     await expect(row.getByText("Submitted", { exact: true })).toBeVisible();
     await expect(row.getByText(/3 documents/i)).toBeVisible();
     await expect(row.getByRole("link", { name: /review/i })).toHaveAttribute(
