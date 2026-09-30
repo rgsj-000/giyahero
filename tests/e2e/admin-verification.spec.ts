@@ -176,15 +176,13 @@ test("agency verifier sees submitted applications in the queue", async ({
     await expect(page.getByText(fixture.agencyName)).toBeVisible();
     await expect(page.getByText(/^Submitted$/)).toBeVisible();
     await expect(page.getByText(/3 documents/i)).toBeVisible();
-    await expect(
-      page.getByRole("link", { name: /review/i }),
-    ).toHaveAttribute("href", `/admin/verifications/${fixture.submissionId}`);
+    await expect(page.getByRole("link", { name: /review/i })).toHaveAttribute(
+      "href",
+      `/admin/verifications/${fixture.submissionId}`,
+    );
   } finally {
     await cleanupFixture(fixture);
-    await Promise.all([
-      removeE2EUser(owner.id),
-      removeE2EUser(verifier.id),
-    ]);
+    await Promise.all([removeE2EUser(owner.id), removeE2EUser(verifier.id)]);
   }
 });
 
@@ -201,10 +199,7 @@ test("super admin can access the verification queue", async ({ page }) => {
     await expect(page.getByText(fixture.agencyName)).toBeVisible();
   } finally {
     await cleanupFixture(fixture);
-    await Promise.all([
-      removeE2EUser(owner.id),
-      removeE2EUser(superAdmin.id),
-    ]);
+    await Promise.all([removeE2EUser(owner.id), removeE2EUser(superAdmin.id)]);
   }
 });
 
@@ -237,7 +232,9 @@ test("ordinary authenticated user cannot access the verification queue", async (
   }
 });
 
-test("anonymous visitor cannot access the verification queue", async ({ page }) => {
+test("anonymous visitor cannot access the verification queue", async ({
+  page,
+}) => {
   await page.goto("/admin/verifications");
   await expect(page).toHaveURL(/\/login\?/);
 });
@@ -286,15 +283,15 @@ test("verifier can start review and reject with a required reason", async ({
     await expect(
       page.getByText("Business permit details require correction."),
     ).toBeVisible();
-    await expect(page.getByRole("button", { name: /start review/i })).toHaveCount(
-      0,
-    );
-    await expect(page.getByRole("button", { name: /verify agency/i })).toHaveCount(
-      0,
-    );
-    await expect(page.getByRole("button", { name: /^Reject Agency$/i })).toHaveCount(
-      0,
-    );
+    await expect(
+      page.getByRole("button", { name: /start review/i }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: /verify agency/i }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: /^Reject Agency$/i }),
+    ).toHaveCount(0);
 
     const verifierClient = await createUserClient(verifier);
     const { error: staleDecisionError } = await verifierClient.rpc(
@@ -317,10 +314,7 @@ test("verifier can start review and reject with a required reason", async ({
     await ownerPage.close();
   } finally {
     await cleanupFixture(fixture);
-    await Promise.all([
-      removeE2EUser(owner.id),
-      removeE2EUser(verifier.id),
-    ]);
+    await Promise.all([removeE2EUser(owner.id), removeE2EUser(verifier.id)]);
   }
 });
 
@@ -330,7 +324,10 @@ test("verifier explicitly confirms approval and agency becomes verified", async 
 }) => {
   const owner = await provisionE2EUser("admin-approve-owner");
   const verifier = await provisionE2EUser("admin-approve-verifier");
-  const fixture = await seedSubmittedAgency(owner.id, "Approval Scenario Tours");
+  const fixture = await seedSubmittedAgency(
+    owner.id,
+    "Approval Scenario Tours",
+  );
 
   try {
     await grantPlatformRole(verifier.id, "agency_verifier");
@@ -341,17 +338,19 @@ test("verifier explicitly confirms approval and agency becomes verified", async 
     await expect(page.getByText(/^Under review$/)).toBeVisible();
 
     await page.getByRole("button", { name: /^Verify Agency$/i }).click();
-    const confirm = page.getByRole("button", { name: /^Confirm Verification$/i });
+    const confirm = page.getByRole("button", {
+      name: /^Confirm Verification$/i,
+    });
     await expect(confirm).toBeVisible();
     await confirm.click();
 
     await expect(page.getByText(/^Verified$/)).toBeVisible();
-    await expect(page.getByRole("button", { name: /verify agency/i })).toHaveCount(
-      0,
-    );
-    await expect(page.getByRole("button", { name: /^Reject Agency$/i })).toHaveCount(
-      0,
-    );
+    await expect(
+      page.getByRole("button", { name: /verify agency/i }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: /^Reject Agency$/i }),
+    ).toHaveCount(0);
 
     const verifierClient = await createUserClient(verifier);
     const { error: staleDecisionError } = await verifierClient.rpc(
@@ -368,13 +367,12 @@ test("verifier explicitly confirms approval and agency becomes verified", async 
     await signInThroughUi(ownerPage, owner);
     await ownerPage.goto(`/agency/${fixture.agencyId}/verification`);
     await expect(ownerPage.getByText(/^Verified$/)).toBeVisible();
-    await expect(ownerPage.getByText(/agency verified by giyahero/i)).toBeVisible();
+    await expect(
+      ownerPage.getByText(/agency verified by giyahero/i),
+    ).toBeVisible();
     await ownerPage.close();
   } finally {
     await cleanupFixture(fixture);
-    await Promise.all([
-      removeE2EUser(owner.id),
-      removeE2EUser(verifier.id),
-    ]);
+    await Promise.all([removeE2EUser(owner.id), removeE2EUser(verifier.id)]);
   }
 });
