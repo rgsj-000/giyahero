@@ -91,9 +91,7 @@ test("agency onboarding continues through verification approval", async ({
     await page
       .getByRole("button", { name: /create agency workspace/i })
       .click();
-    await expect(page).toHaveURL(
-      /\/agency\/[0-9a-f-]{36}\/verification$/i,
-    );
+    await expect(page).toHaveURL(/\/agency\/[0-9a-f-]{36}\/verification$/i);
 
     const agencyIdMatch = page
       .url()
@@ -137,9 +135,7 @@ test("agency onboarding continues through verification approval", async ({
     await signInThroughUi(verifierPage, verifier);
     await verifierPage.goto(`/admin/verifications/${submission.id}`);
 
-    await verifierPage
-      .getByRole("button", { name: /start review/i })
-      .click();
+    await verifierPage.getByRole("button", { name: /start review/i }).click();
     await expect(verifierPage.getByText(/^Under review$/)).toBeVisible();
 
     await verifierPage
