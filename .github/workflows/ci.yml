@@ -21,15 +21,7 @@ jobs:
         with:
           name: pnpm-lock
           path: pnpm-lock.yaml
-      - name: Print admin workspace Prettier diff
-        run: |
-          pnpm exec prettier --write \
-            src/features/agencies/verification/admin-verification-queue.tsx \
-            src/features/agencies/verification/admin-verification-review.tsx
-          git diff -- \
-            src/features/agencies/verification/admin-verification-queue.tsx \
-            src/features/agencies/verification/admin-verification-review.tsx
-          exit 1
+      - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
