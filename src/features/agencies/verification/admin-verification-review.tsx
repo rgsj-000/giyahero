@@ -216,7 +216,8 @@ export function AdminVerificationReview({
                 Verification evidence
               </h2>
               <p className="mt-2 text-sm text-slate-600">
-                Files remain private. Each view link is a short lived signed URL.
+                Files remain private. Each view link is a short lived signed
+                URL.
               </p>
 
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -260,7 +261,9 @@ export function AdminVerificationReview({
                   onClick={() => void startReview()}
                   type="button"
                 >
-                  {busyAction === "review" ? "Starting review…" : "Start Review"}
+                  {busyAction === "review"
+                    ? "Starting review…"
+                    : "Start Review"}
                 </button>
               </>
             ) : null}
