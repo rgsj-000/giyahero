@@ -20,17 +20,13 @@ const statusLabels = {
   under_review: "Under review",
 } as const;
 
-export function AdminVerificationQueue({
-  items,
-}: AdminVerificationQueueProps) {
-  const [filter, setFilter] = useState<"all" | AdminVerificationQueueItem["status"]>(
-    "all",
-  );
+export function AdminVerificationQueue({ items }: AdminVerificationQueueProps) {
+  const [filter, setFilter] = useState<
+    "all" | AdminVerificationQueueItem["status"]
+  >("all");
   const visibleItems = useMemo(
     () =>
-      filter === "all"
-        ? items
-        : items.filter((item) => item.status === filter),
+      filter === "all" ? items : items.filter((item) => item.status === filter),
     [filter, items],
   );
 
@@ -58,8 +54,7 @@ export function AdminVerificationQueue({
               onChange={(event) =>
                 setFilter(
                   event.target.value as
-                    | "all"
-                    | AdminVerificationQueueItem["status"],
+                    "all" | AdminVerificationQueueItem["status"],
                 )
               }
               value={filter}
