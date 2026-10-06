@@ -39,17 +39,22 @@ jobs:
           node-version: 22
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.118.0
       - run: pnpm install --no-frozen-lockfile
       - run: supabase start
       - run: supabase db reset
+      - name: Export local Supabase credentials
+        run: |
+          eval "$(supabase status -o env)"
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+            echo "DATABASE_URL=$DB_URL"
+          } >> "$GITHUB_ENV"
       - run: pnpm test:integration
         env:
           NODE_ENV: test
-          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: local-anon
-          SUPABASE_SERVICE_ROLE_KEY: local-service-role
-          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
 
   e2e:
     runs-on: ubuntu-latest
@@ -61,6 +66,22 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.118.0
       - run: pnpm install --no-frozen-lockfile
+      - run: supabase start
+      - run: supabase db reset
+      - name: Export local Supabase credentials
+        run: |
+          eval "$(supabase status -o env)"
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+            echo "DATABASE_URL=$DB_URL"
+          } >> "$GITHUB_ENV"
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e
+        env:
+          NODE_ENV: test
