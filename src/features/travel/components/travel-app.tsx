@@ -493,36 +493,34 @@ export function TravelApp() {
                       </div>
                     ))}
                   </div>
-                  <label>
-                    Starting from
-                    <select
-                      value={origin}
-                      onChange={(event) => setOrigin(event.target.value)}
-                    >
-                      <option>Tayabas City</option>
-                      <option>Lucena City</option>
-                      <option>Manila</option>
-                      <option>Mauban</option>
-                    </select>
-                  </label>
-                  <label>
-                    Destination
-                    <select
-                      value={destination}
-                      onChange={(event) => setDestination(event.target.value)}
-                    >
-                      <option value="">Explore all of Quezon</option>
-                      {[
-                        "Lucban",
-                        "Tayabas",
-                        "Mauban",
-                        "Cagbalete Island",
-                        "Guinayangan",
-                      ].map((place) => (
-                        <option key={place}>{place}</option>
-                      ))}
-                    </select>
-                  </label>
+                  <label htmlFor="trip-origin">Starting from</label>
+                  <select
+                    id="trip-origin"
+                    value={origin}
+                    onChange={(event) => setOrigin(event.target.value)}
+                  >
+                    <option>Tayabas City</option>
+                    <option>Lucena City</option>
+                    <option>Manila</option>
+                    <option>Mauban</option>
+                  </select>
+                  <label htmlFor="trip-destination">Destination</label>
+                  <select
+                    id="trip-destination"
+                    value={destination}
+                    onChange={(event) => setDestination(event.target.value)}
+                  >
+                    <option value="">Explore all of Quezon</option>
+                    {[
+                      "Lucban",
+                      "Tayabas",
+                      "Mauban",
+                      "Cagbalete Island",
+                      "Guinayangan",
+                    ].map((place) => (
+                      <option key={place}>{place}</option>
+                    ))}
+                  </select>
                   <label>
                     Budget per person <small>(Optional)</small>
                     <input
