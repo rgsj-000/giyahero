@@ -14,6 +14,7 @@
     "test:e2e": "playwright test",
     "format:check": "prettier --check .",
     "test:sql": "vitest run tests/sql",
+    "seed:demo": "node scripts/seed-demo.mjs",
     "test:marketplace": "playwright test -c playwright.marketplace.config.ts",
     "test:mobile": "playwright test -c playwright.mobile.config.ts",
     "mobile:build": "corepack pnpm --filter @giyahero/mobile build",
