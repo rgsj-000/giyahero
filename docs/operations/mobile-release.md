@@ -28,7 +28,22 @@ rtk proxy supabase db push --linked
 
 Use the existing agency onboarding and verification screens to create a staging agency. Create a separate reviewer account. A database administrator can grant that account `agency_verifier` for verification and `content_admin` for first publication review in `public.platform_admin_memberships`. Use actual authenticated user UUIDs, never invent a user UUID. Follow the existing verification/MFA requirements. Do not make the reviewer a member of the agency being reviewed.
 
-At `/agency/onboarding`, register the agency; complete its verification workflow and independent review at `/admin/verifications`. Then create a complete package in the agency workspace and submit it for first publication review. Approve it at `/admin/packages`. Only published packages from verified agencies appear publicly. There is no sample-inventory fallback.
+Before creating a package, provision the approved destinations through the staging project's SQL editor as a database administrator. Migrations create the Quezon province reference but no destinations. Agencies can select active destinations; they cannot create them. Replace the two destination placeholders below with the actual name and a lowercase hyphenated slug for a destination your agency serves. This statement can be rerun safely and does not create a package or agency:
+
+```sql
+insert into public.destinations (province_id, slug, name, is_active)
+select id, 'replace-with-real-destination-slug', 'Replace with actual destination name', true
+from public.provinces
+where code = 'PH-QUE'
+on conflict (slug) do update
+set name = excluded.name, is_active = true
+where destinations.province_id = excluded.province_id
+returning id, name, province_id;
+```
+
+Confirm that the statement returns one destination, then confirm it appears in the agency editor. Add each approved destination this way. For destinations outside Quezon, first provision the corresponding geographic references and use their actual province code. Keep database administrator credentials on the server or in the dashboard.
+
+At `/agency/onboarding`, register the agency; complete its verification workflow and independent review at `/admin/verifications`. Then create a complete package in the agency workspace, select a provisioned destination, and submit it for first publication review. Approve it at `/admin/packages`. Only published packages from verified agencies appear publicly. There is no sample-inventory fallback.
 
 ## 2. Configure sign-in links
 

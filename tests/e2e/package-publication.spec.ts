@@ -8,6 +8,7 @@ test("agency saves a package draft and submits it for first review", async ({
   let input: Record<string, unknown> | null = null;
   let version = 1;
   let status = "draft";
+  let images: { id: string; alt_text: string }[] = [];
   await page.route("https://staging.example.test/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith("/user")) return route.fulfill({ json: testUser });
@@ -41,8 +42,23 @@ test("agency saves a package draft and submits it for first review", async ({
       });
     if (path.endsWith("save_package_draft")) {
       input = route.request().postDataJSON().package_input;
+      version++;
       return route.fulfill({ json: liveCard.id });
     }
+    if (path.includes("/storage/v1/object/"))
+      return route.fulfill({ json: {} });
+    if (path.endsWith("register_package_media")) {
+      const body = route.request().postDataJSON();
+      images = [{ id: body.target_media_id, alt_text: body.target_alt_text }];
+      version++;
+      return route.fulfill({ body: "", status: 204 });
+    }
+    if (path.endsWith("remove_package_media")) {
+      images = [];
+      version++;
+      return route.fulfill({ json: "agency/test/package/test/image.png" });
+    }
+    if (path.includes("package_media")) return route.fulfill({ json: images });
     if (path.endsWith("get_package_draft"))
       return route.fulfill({
         json: { input, version, status, firstReviewedAt: null },
@@ -52,6 +68,12 @@ test("agency saves a package draft and submits it for first review", async ({
       version++;
       return route.fulfill({ body: "", status: 204 });
     }
+    if (path.includes("/packages"))
+      if (
+        new URL(route.request().url()).searchParams.get("select") ===
+        "agency_id"
+      )
+        return route.fulfill({ json: { agency_id: liveCard.agencyId } });
     if (path.includes("/packages"))
       return route.fulfill({
         json: input
@@ -112,6 +134,31 @@ test("agency saves a package draft and submits it for first review", async ({
   await expect(
     page.getByRole("heading", { name: "Edit package" }),
   ).toBeVisible();
+  const uploadEdit =
+    "Unsaved overview describing the meeting point and transfers.";
+  await page.getByLabel("Overview").fill(uploadEdit);
+  await page.getByLabel("Image description").fill("Agency trip photograph");
+  await page.getByLabel("Package image", { exact: true }).setInputFiles({
+    name: "photo.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aEVkAAAAASUVORK5CYII=",
+      "base64",
+    ),
+  });
+  await page.getByRole("button", { name: "Upload image", exact: true }).click();
+  await expect(page.getByText("Image uploaded", { exact: true })).toBeVisible();
+  await expect.soft(page.getByLabel("Overview")).toHaveValue(uploadEdit);
+  expect.soft(input).toEqual(expect.objectContaining({ overview: uploadEdit }));
+  const removalEdit =
+    "Unsaved policies and meeting details remain after image removal.";
+  await page.getByLabel("Overview").fill(removalEdit);
+  await page.getByRole("button", { name: "Remove image", exact: true }).click();
+  await expect(page.getByText("Image removed", { exact: true })).toBeVisible();
+  await expect.soft(page.getByLabel("Overview")).toHaveValue(removalEdit);
+  expect
+    .soft(input)
+    .toEqual(expect.objectContaining({ overview: removalEdit }));
   await page.getByRole("button", { name: "Submit for review" }).click();
   await expect(
     page.getByText("Awaiting first publication review"),

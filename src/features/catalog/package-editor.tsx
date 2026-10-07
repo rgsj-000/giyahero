@@ -160,6 +160,10 @@ export function PackageEditor({
       onSaved(id);
     });
   }
+  async function saveBeforeImageChange() {
+    await savePackageDraft(client, agencyId, savedId, version, draft);
+    await reload(savedId!);
+  }
   async function publish() {
     if (!savedId || version === null) return;
     await run(async () => {
@@ -769,11 +773,13 @@ export function PackageEditor({
       {savedId && editable && (
         <section className="gh-panel">
           <h2>Package images</h2>
+          <p>Uploading or removing an image saves your current draft first.</p>
           <label>
             Image description
             <input
               value={alt}
               maxLength={200}
+              disabled={busy}
               onChange={(e) => setAlt(e.target.value)}
             />
           </label>
@@ -782,6 +788,7 @@ export function PackageEditor({
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp"
+              disabled={busy}
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             />
           </label>
@@ -790,6 +797,7 @@ export function PackageEditor({
             disabled={busy || !file}
             onClick={() =>
               run(async () => {
+                await saveBeforeImageChange();
                 await uploadPackageImage(client, savedId, file!, alt);
                 await reload(savedId);
                 media.refresh();
@@ -808,6 +816,7 @@ export function PackageEditor({
                 disabled={busy}
                 onClick={() =>
                   run(async () => {
+                    await saveBeforeImageChange();
                     await removePackageImage(client, m.id);
                     await reload(savedId);
                     media.refresh();
