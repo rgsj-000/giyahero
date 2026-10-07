@@ -381,3 +381,39 @@
     scroll-behavior: auto !important;
   }
 }
+.gh-marketplace fieldset {
+  border: 0;
+  margin: 20px 0;
+  padding: 0;
+  min-width: 0;
+}
+.gh-marketplace legend {
+  font-weight: 700;
+  padding: 0 0 12px;
+}
+.gh-marketplace input[type="checkbox"] {
+  width: 24px;
+  min-height: 24px;
+}
+.gh-marketplace label:has(input[type="checkbox"]) {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+}
+.gh-editor-row {
+  padding: 16px;
+  border: 1px solid #d8e1eb;
+  border-radius: 14px;
+  margin: 12px 0;
+}
+.gh-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 20px 0;
+}
+.gh-marketplace textarea {
+  min-height: 110px;
+  resize: vertical;
+}

@@ -5,15 +5,31 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { Compass, Ticket, Building2 } from "lucide-react";
 import { CatalogList } from "./catalog-list";
 import { CatalogDetailScreen } from "./catalog-detail";
+import { AgencyWorkspace } from "./agency-workspace";
 import type { MarketplaceNavigation } from "./navigation";
 import "./marketplace.css";
-type Screen = { name: "browse" | "trips" | "agency"; packageId?: string };
+type Screen = {
+  name: "browse" | "trips" | "agency";
+  packageId?: string;
+  agencyId?: string;
+  editPackageId?: string;
+  editing?: boolean;
+};
 function readScreen(): Screen {
   const hash = window.location.hash.slice(1);
   if (hash.startsWith("package/"))
     return { name: "browse", packageId: hash.slice(8) };
   if (hash === "trips") return { name: "trips" };
   if (hash === "agency") return { name: "agency" };
+  if (hash.startsWith("agency/")) {
+    const parts = hash.split("/");
+    return {
+      name: "agency",
+      agencyId: parts[1],
+      editing: parts[2] === "packages",
+      editPackageId: parts[3] === "new" ? undefined : parts[3],
+    };
+  }
   return { name: "browse" };
 }
 export function MarketplaceShell({
@@ -72,6 +88,15 @@ export function MarketplaceShell({
           />
         ) : screen.name === "browse" ? (
           <CatalogList client={client} navigation={nav} />
+        ) : screen.name === "agency" ? (
+          <AgencyWorkspace
+            client={client}
+            agencyId={screen.agencyId}
+            packageId={screen.editPackageId}
+            editing={screen.editing}
+            onLogin={onLogin}
+            openExternal={openExternal}
+          />
         ) : (
           <section className="gh-empty">
             <h1>{screen.name === "trips" ? "My Trips" : "Agency workspace"}</h1>

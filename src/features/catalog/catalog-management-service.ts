@@ -94,7 +94,8 @@ export async function listMyAgencies(
     data: { user },
     error: authError,
   } = await client.auth.getUser();
-  if (authError) throw new Error(authError.message);
+  if (authError && authError.name !== "AuthSessionMissingError")
+    throw new Error(authError.message);
   if (!user) return [];
   const { data, error } = await client
     .from("agency_members")
