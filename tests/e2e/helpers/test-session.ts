@@ -45,4 +45,5 @@ export async function seedBrowserSession(page: Page) {
       sameSite: "Lax",
     },
   ]);
+  return session;
 }

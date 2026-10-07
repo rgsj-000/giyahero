@@ -1,0 +1,60 @@
+html {
+  background: #f6f8fb;
+}
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  color: #19344f;
+}
+* {
+  box-sizing: border-box;
+}
+.gh-marketplace {
+  min-height: 100dvh;
+}
+.gh-market-header {
+  padding-top: max(12px, env(safe-area-inset-top));
+}
+.gh-bottom-nav {
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+.gh-market-content {
+  padding-bottom: 120px;
+}
+.gh-native-notice {
+  text-align: center;
+  padding: 8px;
+  font-size: 13px;
+  background: #fff3cb;
+}
+.gh-auth {
+  max-width: 480px;
+  margin: auto;
+  padding: 24px;
+}
+.gh-auth label {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0;
+}
+.gh-auth input {
+  width: 100%;
+  font: inherit;
+  padding: 12px;
+  border: 1px solid #8c9eb0;
+  border-radius: 10px;
+  min-height: 48px;
+}
+.gh-auth button {
+  min-height: 48px;
+}
+.gh-auth .gh-form-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+input,
+select,
+textarea {
+  font-size: 16px;
+}

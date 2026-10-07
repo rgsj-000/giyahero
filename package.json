@@ -12,7 +12,15 @@
     "test": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
     "test:e2e": "playwright test",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test:sql": "vitest run tests/sql",
+    "test:marketplace": "playwright test -c playwright.marketplace.config.ts",
+    "test:mobile": "playwright test -c playwright.mobile.config.ts",
+    "mobile:build": "corepack pnpm --filter @giyahero/mobile build",
+    "mobile:typecheck": "corepack pnpm --filter @giyahero/mobile typecheck",
+    "mobile:sync": "corepack pnpm --filter @giyahero/mobile sync",
+    "mobile:android": "corepack pnpm --filter @giyahero/mobile android",
+    "mobile:ios": "corepack pnpm --filter @giyahero/mobile ios"
   },
   "dependencies": {
     "@sentry/nextjs": "^10.9.0",

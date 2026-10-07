@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">GiyaHero Staging</string>
+    <string name="title_activity_main">GiyaHero Staging</string>
+    <string name="package_name">com.example.giyahero.staging</string>
+    <string name="custom_url_scheme">com.example.giyahero.staging</string>
+</resources>
