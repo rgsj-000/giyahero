@@ -21,13 +21,12 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
-        <!-- GIYAHERO_APP_LINK_START -->
+<!-- GIYAHERO_APP_LINK_START -->
 <intent-filter android:autoVerify="true">
 <action android:name="android.intent.action.VIEW" />
 <category android:name="android.intent.category.DEFAULT" />
 <category android:name="android.intent.category.BROWSABLE" />
-<data android:scheme="https" android:host="stage.giyahero.test" android:path="/mobile/auth/callback" />
+<data android:scheme="https" android:host="giyahero-staging-rnj007s-projects.vercel.app" android:path="/mobile/auth/callback" />
 </intent-filter>
 <!-- GIYAHERO_APP_LINK_END -->
 </activity>
