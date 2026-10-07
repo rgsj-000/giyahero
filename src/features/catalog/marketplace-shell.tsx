@@ -1,11 +1,14 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 import { useEffect, useState, useMemo } from "react";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { Compass, Ticket, Building2 } from "lucide-react";
 import { CatalogList } from "./catalog-list";
 import { CatalogDetailScreen } from "./catalog-detail";
 import { AgencyWorkspace } from "./agency-workspace";
+import { BookingScreen } from "../bookings/booking-screen";
+import { MyTrips } from "../bookings/my-trips";
+import { RequestDetail } from "../bookings/request-detail";
 import type { MarketplaceNavigation } from "./navigation";
 import "./marketplace.css";
 type Screen = {
@@ -14,9 +17,15 @@ type Screen = {
   agencyId?: string;
   editPackageId?: string;
   editing?: boolean;
+  bookingPackageId?: string;
+  requestId?: string;
 };
 function readScreen(): Screen {
   const hash = window.location.hash.slice(1);
+  if (hash.startsWith("book/"))
+    return { name: "browse", bookingPackageId: hash.slice(5) };
+  if (hash.startsWith("request/"))
+    return { name: "trips", requestId: hash.slice(8) };
   if (hash.startsWith("package/"))
     return { name: "browse", packageId: hash.slice(8) };
   if (hash === "trips") return { name: "trips" };
@@ -42,6 +51,48 @@ export function MarketplaceShell({
   onLogin: (returnPath: string) => void;
 }) {
   const [screen, setScreen] = useState<Screen>({ name: "browse" });
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState("");
+  useEffect(() => {
+    let active = true;
+    client.auth
+      .getSession()
+      .then(({ data, error }) => {
+        if (active) {
+          setUser(data.session?.user ?? null);
+          setAuthLoading(false);
+          if (error) setAuthError(error.message);
+        }
+      })
+      .catch((e) => {
+        if (active) {
+          setAuthLoading(false);
+          setAuthError(String(e));
+        }
+      });
+    const {
+      data: { subscription },
+    } = client.auth.onAuthStateChange((_event, session) => {
+      if (active) {
+        setUser(session?.user ?? null);
+        setAuthLoading(false);
+      }
+    });
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, [client]);
+  async function signOut() {
+    const { error } = await client.auth.signOut();
+    if (error) {
+      setAuthError(error.message);
+      return;
+    }
+    setUser(null);
+    window.location.hash = "browse";
+  }
   useEffect(() => {
     const update = () => {
       setScreen(readScreen());
@@ -73,20 +124,52 @@ export function MarketplaceShell({
         </a>
         <button
           className="gh-action gh-secondary"
-          onClick={() => onLogin("/" + window.location.hash)}
+          onClick={() =>
+            user ? signOut() : onLogin("/" + window.location.hash)
+          }
         >
-          Sign in
+          {user ? "Sign out" : "Sign in"}
         </button>
       </header>
       <main className="gh-market-content">
-        {screen.packageId ? (
+        {authError && <p role="alert">{authError}</p>}
+        {authLoading &&
+        (screen.bookingPackageId ||
+          screen.requestId ||
+          screen.name === "trips") ? (
+          <p role="status">Checking your session…</p>
+        ) : screen.bookingPackageId && user ? (
+          <BookingScreen
+            key={user.id + screen.bookingPackageId}
+            client={client}
+            packageId={screen.bookingPackageId}
+            navigation={nav}
+          />
+        ) : screen.requestId && user ? (
+          <RequestDetail
+            key={user.id + screen.requestId}
+            client={client}
+            requestId={screen.requestId}
+          />
+        ) : screen.name === "trips" && user ? (
+          <MyTrips
+            key={user.id}
+            client={client}
+            onOpenRequest={(id) => {
+              window.location.hash = "request/" + id;
+            }}
+          />
+        ) : screen.packageId ? (
           <CatalogDetailScreen
             client={client}
             packageId={screen.packageId}
             navigation={nav}
-            onRequest={() => onLogin("/#package/" + screen.packageId)}
+            onRequest={() => {
+              if (user) window.location.hash = "book/" + screen.packageId;
+              else onLogin("/#book/" + screen.packageId);
+            }}
           />
-        ) : screen.name === "browse" ? (
+        ) : screen.name === "browse" && !screen.bookingPackageId ? (
           <CatalogList client={client} navigation={nav} />
         ) : screen.name === "agency" ? (
           <AgencyWorkspace
@@ -109,7 +192,7 @@ export function MarketplaceShell({
             </p>
             <button
               className="gh-action gh-orange"
-              onClick={() => onLogin("/#" + screen.name)}
+              onClick={() => onLogin("/" + window.location.hash)}
             >
               Sign in to continue
             </button>

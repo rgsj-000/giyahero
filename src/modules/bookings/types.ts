@@ -4,6 +4,9 @@ import type { CatalogDetail } from "../catalog/types";
 export type BookingInput = z.infer<typeof bookingInputSchema>;
 export type BookingStatus = "pending" | "accepted" | "declined" | "cancelled";
 export type BookingSnapshot = {
+  packageVersion: number;
+  agencyContactEmail: string | null;
+  agencyContactPhone: string | null;
   title: string;
   agencyName: string;
   currencyCode: string;

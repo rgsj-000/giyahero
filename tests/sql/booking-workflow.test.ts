@@ -16,6 +16,7 @@ const rateId = "50000000-0000-4000-8000-000000000001",
 function input(change: Record<string, unknown> = {}) {
   return {
     packageId,
+    expectedVersion: 1,
     rateId,
     departureId,
     startsOn: null,
@@ -52,6 +53,10 @@ beforeEach(async () => {
 }, 30000);
 afterEach(async () => {
   await db?.close();
+});
+it("rejects an outdated displayed package version", async () => {
+ await db.query('update public.packages set version=2 where id=$1',[packageId]);
+ await expect(submit(input({expectedVersion:1}))).rejects.toThrow('Package changed');
 });
 it("derives identity, dates, safe price and immutable terms on the server", async () => {
   const id = await submit();

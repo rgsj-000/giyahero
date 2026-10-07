@@ -2,6 +2,7 @@ import { z } from "zod";
 export const bookingInputSchema = z
   .strictObject({
     packageId: z.uuid(),
+    expectedVersion: z.number().int().positive(),
     rateId: z.uuid(),
     departureId: z.uuid().nullable(),
     startsOn: z.iso.date().nullable(),

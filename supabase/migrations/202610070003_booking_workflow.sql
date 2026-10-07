@@ -38,7 +38,7 @@ declare p public.packages; a public.agencies; rate public.package_prices; dep pu
 begin
  if auth.uid() is null then raise exception 'Sign in to request a booking' using errcode='42501'; end if;
  if request_input is null or jsonb_typeof(request_input)<>'object' or exists(select 1 from jsonb_object_keys(request_input) k where k not in
- ('packageId','rateId','departureId','startsOn','endsOn','adults','children','contactName','contactEmail','contactPhone','notes','submissionKey')) then raise exception 'Invalid request fields'; end if;
+ ('packageId','expectedVersion','rateId','departureId','startsOn','endsOn','adults','children','contactName','contactEmail','contactPhone','notes','submissionKey')) then raise exception 'Invalid request fields'; end if;
  if jsonb_typeof(request_input->'adults') is distinct from 'number' or jsonb_typeof(request_input->'children') is distinct from 'number'
  or (request_input->>'adults') !~ '^[0-9]+$' or (request_input->>'children') !~ '^[0-9]+$' then raise exception 'Invalid traveler counts'; end if;
  adults_n:=(request_input->>'adults')::integer; children_n:=(request_input->>'children')::integer; party:=adults_n+children_n;
@@ -63,6 +63,7 @@ begin
  select * into a from public.agencies where id=p.agency_id for update;
  select * into p from public.packages where id=p.id for update;
  if p.id is null or a.status<>'verified' or p.publication_status<>'published' then raise exception 'Package is no longer available'; end if;
+ if p.version is distinct from (request_input->>'expectedVersion')::integer then raise exception 'Package changed; reopen the listing and review the latest quotation and terms' using errcode='40001'; end if;
  select * into rate from public.package_prices where id=(request_input->>'rateId')::uuid and package_id=p.id and is_active;
  if rate.id is null or party not between p.min_travelers and p.max_travelers or party<rate.min_travelers or (rate.max_travelers is not null and party>rate.max_travelers) then raise exception 'Choose an eligible price option and group size'; end if;
  if p.schedule_model='fixed_departures' then
@@ -80,7 +81,7 @@ begin
  end if;
  total:=rate.amount_minor::numeric * case when p.pricing_model='per_group' then 1 else party end;
  if total>9007199254740991 then raise exception 'Quotation exceeds the supported amount'; end if;
- snap:=jsonb_build_object('title',p.title,'agencyName',a.name,'currencyCode',p.currency_code,'totalAmountMinor',total::bigint,
+ snap:=jsonb_build_object('packageVersion',p.version,'title',p.title,'agencyName',a.name,'currencyCode',p.currency_code,'totalAmountMinor',total::bigint,
  'rateLabel',rate.label,'pricingModel',p.pricing_model,'startsOn',start_date,'endsOn',end_date,'startsAt',dep.starts_at,'endsAt',dep.ends_at,
  'adults',adults_n,'children',children_n,'paymentTerms','Agency-arranged payment. Confirmation does not mean payment has been received.')
  || (public.get_public_package_detail(p.id)-array['id','agencyId','slug','title','agencyName','currencyCode','rates','departures','version','fromAmountMinor']);

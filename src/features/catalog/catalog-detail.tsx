@@ -152,7 +152,9 @@ export function CatalogDetailScreen({
             <h2>This package is unavailable.</h2>
             <button
               className="gh-action"
-              onClick={() => navigation.openTrips()}
+              onClick={() => {
+                window.location.hash = "browse";
+              }}
             >
               Browse other trips
             </button>

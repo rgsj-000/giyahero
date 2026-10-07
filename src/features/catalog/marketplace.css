@@ -267,6 +267,16 @@
   flex-wrap: wrap;
   margin-top: 20px;
 }
+.gh-request-row {
+  display: flex;
+  width: 100%;
+  gap: 10px;
+  flex-direction: column;
+  text-align: left;
+  margin: 12px 0;
+  cursor: pointer;
+  color: inherit;
+}
 .gh-feedback {
   background: #fff0e9;
   border: 1px solid #e2b8a0;

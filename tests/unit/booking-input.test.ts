@@ -2,6 +2,7 @@ import { expect, it } from "vitest";
 import { bookingInputSchema } from "../../src/modules/bookings/request";
 const input = {
   packageId: "30000000-0000-4000-8000-000000000001",
+  expectedVersion: 1,
   rateId: "50000000-0000-4000-8000-000000000001",
   departureId: "60000000-0000-4000-8000-000000000001",
   startsOn: null,
