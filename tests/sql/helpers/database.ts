@@ -15,6 +15,9 @@ export async function createDatabase(through = "999999") {
       'select coalesce(nullif(current_setting(''request.jwt.claims'', true), ''''), ''{}'')::jsonb';
     grant usage on schema auth, public, storage to anon, authenticated, service_role;
     grant execute on all functions in schema auth to anon, authenticated, service_role;
+    -- Supabase defaults: migrations may subsequently revoke these client grants.
+    alter default privileges in schema public grant select,insert,update,delete on tables to anon,authenticated;
+    alter default privileges in schema public grant all on tables to service_role;
     create table storage.buckets(id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
     create table storage.objects(id uuid primary key default gen_random_uuid(), bucket_id text references storage.buckets(id), name text, owner uuid, owner_id text, metadata jsonb, unique(bucket_id,name));
     alter table storage.objects enable row level security;

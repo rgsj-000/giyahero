@@ -148,6 +148,7 @@ export function AgencyWorkspace({
             ) ? (
             editing ? (
               <PackageEditor
+                key={agencyId + ":" + (packageId ?? "new")}
                 client={client}
                 agencyId={agencyId}
                 packageId={packageId ?? null}

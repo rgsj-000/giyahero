@@ -1,4 +1,5 @@
 export function currencyScale(currency: string): number {
+  if (!/^[A-Z]{3}$/.test(currency)) return 100;
   return (
     10 **
     (new Intl.NumberFormat("en-PH", {

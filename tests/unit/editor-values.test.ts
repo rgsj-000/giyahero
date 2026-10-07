@@ -9,6 +9,7 @@ it("round trips departure dates in Philippine time independently of device timez
   expect(manilaInputToIso("2030-01-01T09:30")).toBe("2030-01-01T01:30:00.000Z");
 });
 it("uses each currency minor-unit precision", () => {
+  expect(currencyScale("P")).toBe(100);
   expect(currencyScale("PHP")).toBe(100);
   expect(currencyScale("JPY")).toBe(1);
   expect(currencyScale("KWD")).toBe(1000);

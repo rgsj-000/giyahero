@@ -49,6 +49,9 @@ begin
  or object.metadata->>'size' is null or (object.metadata->>'size')::bigint not between 1 and 5242880
  or object.metadata->>'mimetype' not in('image/jpeg','image/png','image/webp')
  or object.metadata->>'mimetype' is null then raise exception 'Uploaded image is missing or invalid'; end if;
+ if (object.metadata->>'mimetype'='image/jpeg' and right(target_storage_path,4)<>'.jpg')
+ or (object.metadata->>'mimetype'='image/png' and right(target_storage_path,4)<>'.png')
+ or (object.metadata->>'mimetype'='image/webp' and right(target_storage_path,5)<>'.webp') then raise exception 'Image type does not match its extension'; end if;
  insert into public.package_media(id,package_id,storage_path,alt_text) values(target_media_id,p.id,target_storage_path,trim(target_alt_text));
  update public.packages set version=version+1 where id=p.id;
  return target_media_id;

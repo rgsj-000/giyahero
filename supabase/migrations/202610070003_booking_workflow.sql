@@ -1,5 +1,7 @@
 -- All mutations serialize on agency -> package -> departure -> request.
 create type public.booking_request_status as enum ('pending','accepted','declined','cancelled');
+alter table public.package_prices add constraint package_prices_id_package_unique unique(id,package_id);
+alter table public.package_departures add constraint package_departures_id_package_unique unique(id,package_id);
 create table public.booking_requests (
  id uuid primary key default gen_random_uuid(),
  traveler_id uuid not null references public.profiles(id) on delete restrict,
@@ -12,7 +14,10 @@ create table public.booking_requests (
  contact_name text not null, contact_email text not null, contact_phone text not null, notes text not null default '',
  status public.booking_request_status not null default 'pending', decision_reason text not null default '',
  created_at timestamptz not null default now(), decided_at timestamptz,
- unique(traveler_id,submission_key)
+ unique(traveler_id,submission_key),
+ foreign key(package_id,agency_id) references public.packages(id,agency_id) on delete restrict,
+ foreign key(rate_id,package_id) references public.package_prices(id,package_id) on delete restrict,
+ foreign key(departure_id,package_id) references public.package_departures(id,package_id) on delete restrict
 );
 create index booking_requests_agency_status on public.booking_requests(agency_id,status,created_at desc);
 create index booking_requests_traveler on public.booking_requests(traveler_id,created_at desc);

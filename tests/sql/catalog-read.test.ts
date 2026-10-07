@@ -66,7 +66,10 @@ it("returns live package detail and never exposes a draft to guests", async () =
     [packageId],
   );
   const hidden = await asActor(db, null, (tx) =>
-    tx.query<{ result: unknown }>("select public.get_public_package_detail($1) result", [packageId]),
+    tx.query<{ result: unknown }>(
+      "select public.get_public_package_detail($1) result",
+      [packageId],
+    ),
   );
   expect(hidden.rows[0].result).toBeNull();
 });

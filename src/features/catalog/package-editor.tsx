@@ -103,6 +103,18 @@ export function PackageEditor({
   const editable = !["pending_first_review", "archived", "suspended"].includes(
     status,
   );
+  const reviews = useData(
+    useCallback(async () => {
+      if (!savedId) return [];
+      const { data, error } = await client
+        .from("package_publication_events")
+        .select("id,status,note,created_at")
+        .eq("package_id", savedId)
+        .order("created_at", { ascending: false });
+      if (error) throw new Error(error.message);
+      return data ?? [];
+    }, [client, savedId]),
+  );
   function field<K extends keyof PackageDraftInput>(
     key: K,
     value: PackageDraftInput[K],
@@ -191,6 +203,19 @@ export function PackageEditor({
     >
       <h1>{savedId ? "Edit package" : "Create package"}</h1>
       <p className="gh-status">{status.replaceAll("_", " ")}</p>
+      <CatalogState
+        loading={reviews.loading}
+        error={reviews.error}
+        onRetry={reviews.refresh}
+      >
+        {reviews.data
+          ?.filter((r) => r.note)
+          .map((r) => (
+            <p key={r.id} className="gh-feedback">
+              {r.note}
+            </p>
+          ))}
+      </CatalogState>
       <form onSubmit={save}>
         <fieldset disabled={busy || !editable} className="gh-editor-fieldset">
           <section className="gh-panel gh-form-grid">

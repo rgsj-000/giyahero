@@ -2,3 +2,4 @@ docs/superpowers/
 mobile/dist/
 mobile/android/
 mobile/ios/
+next-env.d.ts

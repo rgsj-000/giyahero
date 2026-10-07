@@ -177,6 +177,7 @@ export function MarketplaceShell({
           <CatalogList client={client} navigation={nav} />
         ) : screen.name === "agency" ? (
           <AgencyWorkspace
+            key={user?.id ?? "guest"}
             client={client}
             agencyId={screen.agencyId}
             packageId={screen.editPackageId}

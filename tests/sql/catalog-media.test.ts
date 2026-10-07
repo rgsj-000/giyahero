@@ -5,6 +5,7 @@ import {
   asActor,
   owner,
   outsider,
+  reviewer,
   packageId,
   agencyId,
 } from "./helpers/database";
@@ -27,6 +28,23 @@ afterAll(async () => {
   await db?.close();
 });
 it("registers only an editor-owned object in the package's generated path", async () => {
+  await db.query(
+    'update storage.objects set metadata=\'{"size":12,"mimetype":"image/jpeg"}\' where name=$1',
+    [path],
+  );
+  await expect(
+    asActor(db, owner, (tx) =>
+      tx.query("select public.register_package_media($1,$2,$3,'Island view')", [
+        packageId,
+        mediaId,
+        path,
+      ]),
+    ),
+  ).rejects.toThrow("type");
+  await db.query(
+    'update storage.objects set metadata=\'{"size":12,"mimetype":"image/png"}\' where name=$1',
+    [path],
+  );
   await expect(
     asActor(db, outsider, (tx) =>
       tx.query("select public.register_package_media($1,$2,$3,'Island view')", [
@@ -68,4 +86,13 @@ it("registers only an editor-owned object in the package's generated path", asyn
     ),
   );
   expect(hidden.rows).toEqual([]);
+  expect(
+    (
+      await asActor(db, reviewer, (tx) =>
+        tx.query(
+          "select name from storage.objects where bucket_id='package-media'",
+        ),
+      )
+    ).rows,
+  ).toHaveLength(1);
 });

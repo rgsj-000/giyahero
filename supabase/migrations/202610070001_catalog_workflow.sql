@@ -1,4 +1,6 @@
 alter table public.packages add column draft_payload jsonb;
+-- Supabase grants client DML by default; catalog changes must use controlled RPCs.
+revoke insert,update,delete,truncate,references,trigger on public.packages,public.package_destinations,public.package_itinerary_days,public.package_features,public.package_media,public.package_prices,public.package_policies,public.package_departures,public.package_tags from anon,authenticated;
 create table public.package_publication_events(
  id uuid primary key default gen_random_uuid(), package_id uuid not null references public.packages(id) on delete restrict,
  actor_id uuid not null references public.profiles(id), status public.package_publication_status not null,

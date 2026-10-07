@@ -11,7 +11,6 @@ import { CatalogPhoto } from "./catalog-photo";
 export function CatalogDetailScreen({
   client,
   packageId,
-  navigation,
   onRequest,
 }: {
   client: SupabaseClient;

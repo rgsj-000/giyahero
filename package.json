@@ -20,7 +20,11 @@
     "mobile:typecheck": "corepack pnpm --filter @giyahero/mobile typecheck",
     "mobile:sync": "corepack pnpm --filter @giyahero/mobile sync",
     "mobile:android": "corepack pnpm --filter @giyahero/mobile android",
-    "mobile:ios": "corepack pnpm --filter @giyahero/mobile ios"
+    "mobile:ios": "corepack pnpm --filter @giyahero/mobile ios",
+    "mobile:configure": "node scripts/mobile/configure-native.mjs",
+    "mobile:release-check": "node scripts/mobile/check-release-config.mjs",
+    "mobile:associations": "node scripts/mobile/write-link-associations.mjs",
+    "mobile:assets": "corepack pnpm --filter @giyahero/mobile exec node scripts/brand-assets.mjs"
   },
   "dependencies": {
     "@sentry/nextjs": "^10.9.0",

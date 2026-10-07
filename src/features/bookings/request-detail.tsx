@@ -38,6 +38,11 @@ export function RequestSummary({
         <strong>{formatPrice(s.totalAmountMinor, s.currencyCode)}</strong>
       </p>
       <p>{s.paymentTerms}</p>
+      {(s.agencyContactEmail || s.agencyContactPhone) && (
+        <p>
+          Agency contact: {s.agencyContactEmail} {s.agencyContactPhone}
+        </p>
+      )}
       {r.decisionReason && <p>{r.decisionReason}</p>}
       <h3>Original itinerary and terms</h3>
       {s.itinerary.map((d) => (

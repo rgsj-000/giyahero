@@ -1,0 +1,200 @@
+name: mobile
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      build_signed:
+        description: Build signed staging artifacts (requires configured mobile-staging environment)
+        type: boolean
+        default: false
+permissions:
+  contents: read
+env:
+  VITE_SUPABASE_URL: ${{ vars.STAGING_SUPABASE_URL || 'https://staging.example.test' }}
+  VITE_SUPABASE_ANON_KEY: ${{ vars.STAGING_SUPABASE_ANON_KEY || 'test-key' }}
+  VITE_WEB_ORIGIN: ${{ vars.STAGING_WEB_ORIGIN || 'https://stage.giyahero.test' }}
+  VITE_AUTH_CALLBACK_URL: ${{ vars.STAGING_AUTH_CALLBACK_URL || 'https://stage.giyahero.test/mobile/auth/callback' }}
+  VITE_BROWSER_PREVIEW: "false"
+  GIYAHERO_APP_ID: ${{ vars.STAGING_APP_ID || 'com.example.giyahero.staging' }}
+  GIYAHERO_APP_NAME: GiyaHero Staging
+jobs:
+  mobile-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm mobile:typecheck
+      - run: pnpm mobile:build
+      - run: pnpm test
+      - run: pnpm test:sql
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:mobile
+      - run: pnpm test:marketplace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mobile-web-bundle
+          path: mobile/dist
+  android-debug:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm mobile:configure
+      - run: pnpm mobile:build
+      - run: pnpm --filter @giyahero/mobile exec cap sync android
+      - run: chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+        working-directory: mobile/android
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-debug-apk
+          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+  ios-simulator:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Select Xcode 26
+        run: |
+          xcode_app=$(find /Applications -maxdepth 1 -name 'Xcode_26*.app' | sort -V | tail -1)
+          test -n "$xcode_app"
+          sudo xcode-select -s "$xcode_app/Contents/Developer"
+          xcodebuild -version
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm mobile:configure
+      - run: pnpm mobile:build
+      - run: pnpm --filter @giyahero/mobile exec cap sync ios
+      - run: xcodebuild -project App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+        working-directory: mobile/ios/App
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-unsigned-simulator
+          path: mobile/ios/App/build/Build/Products/Debug-iphonesimulator/App.app
+  signed-android-staging:
+    if: github.event_name == 'workflow_dispatch' && inputs.build_signed
+    environment: mobile-staging
+    runs-on: ubuntu-latest
+    env:
+      GIYAHERO_ENVIRONMENT: staging
+      GIYAHERO_APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+      GIYAHERO_ANDROID_SHA256: ${{ vars.ANDROID_SHA256 }}
+      GIYAHERO_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      GIYAHERO_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      GIYAHERO_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm mobile:release-check
+      - name: Install supplied signing key
+        run: |
+          test -n "$KEYSTORE_BASE64"
+          test -n "$GIYAHERO_ANDROID_KEYSTORE_PASSWORD"
+          test -n "$GIYAHERO_ANDROID_KEY_ALIAS"
+          test -n "$GIYAHERO_ANDROID_KEY_PASSWORD"
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/giyahero.jks"
+          echo "GIYAHERO_ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/giyahero.jks" >> "$GITHUB_ENV"
+      - run: pnpm mobile:configure
+      - run: pnpm mobile:build
+      - run: pnpm --filter @giyahero/mobile exec cap sync android
+      - run: chmod +x gradlew && ./gradlew bundleRelease --no-daemon
+        working-directory: mobile/android
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-signed-staging-aab
+          path: mobile/android/app/build/outputs/bundle/release/app-release.aab
+  signed-ios-staging:
+    if: github.event_name == 'workflow_dispatch' && inputs.build_signed
+    environment: mobile-staging
+    runs-on: macos-15
+    env:
+      GIYAHERO_ENVIRONMENT: staging
+      GIYAHERO_APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+      GIYAHERO_ANDROID_SHA256: ${{ vars.ANDROID_SHA256 }}
+      CERTIFICATE_BASE64: ${{ secrets.APPLE_DISTRIBUTION_P12_BASE64 }}
+      CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DISTRIBUTION_P12_PASSWORD }}
+      PROFILE_BASE64: ${{ secrets.APPLE_STAGING_PROFILE_BASE64 }}
+      KEYCHAIN_PASSWORD: ${{ secrets.CI_KEYCHAIN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Select Xcode 26
+        run: |
+          xcode_app=$(find /Applications -maxdepth 1 -name 'Xcode_26*.app' | sort -V | tail -1)
+          test -n "$xcode_app"
+          sudo xcode-select -s "$xcode_app/Contents/Developer"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm mobile:release-check
+      - run: pnpm mobile:configure
+      - run: pnpm mobile:build
+      - run: pnpm --filter @giyahero/mobile exec cap sync ios
+      - name: Install supplied Apple signing credentials
+        run: |
+          test -n "$CERTIFICATE_BASE64"
+          test -n "$CERTIFICATE_PASSWORD"
+          test -n "$PROFILE_BASE64"
+          test -n "$KEYCHAIN_PASSWORD"
+          printf '%s' "$CERTIFICATE_BASE64" | base64 --decode > "$RUNNER_TEMP/distribution.p12"
+          printf '%s' "$PROFILE_BASE64" | base64 --decode > "$RUNNER_TEMP/staging.mobileprovision"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$RUNNER_TEMP/signing.keychain-db"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$RUNNER_TEMP/signing.keychain-db"
+          security set-keychain-settings -lut 21600 "$RUNNER_TEMP/signing.keychain-db"
+          security import "$RUNNER_TEMP/distribution.p12" -P "$CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$RUNNER_TEMP/signing.keychain-db"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$RUNNER_TEMP/signing.keychain-db"
+          security list-keychains -d user -s "$RUNNER_TEMP/signing.keychain-db"
+          security cms -D -i "$RUNNER_TEMP/staging.mobileprovision" > "$RUNNER_TEMP/profile.plist"
+          profile_uuid=$(/usr/libexec/PlistBuddy -c 'Print UUID' "$RUNNER_TEMP/profile.plist")
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$RUNNER_TEMP/staging.mobileprovision" "$HOME/Library/MobileDevice/Provisioning Profiles/$profile_uuid.mobileprovision"
+          echo "GIYAHERO_PROFILE_UUID=$profile_uuid" >> "$GITHUB_ENV"
+      - name: Archive and export staging IPA
+        run: |
+          xcodebuild -project mobile/ios/App/App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/GiyaHero.xcarchive" DEVELOPMENT_TEAM="$GIYAHERO_APPLE_TEAM_ID" CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="Apple Distribution" PROVISIONING_PROFILE_SPECIFIER="$GIYAHERO_PROFILE_UUID" archive
+          node scripts/mobile/write-ios-export-options.mjs "$RUNNER_TEMP/ExportOptions.plist"
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/GiyaHero.xcarchive" -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" -exportPath "$RUNNER_TEMP/GiyaHero-export"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-signed-staging-ipa
+          path: ${{ runner.temp }}/GiyaHero-export/*.ipa
+      - name: Remove temporary signing keychain
+        if: always()
+        run: security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true

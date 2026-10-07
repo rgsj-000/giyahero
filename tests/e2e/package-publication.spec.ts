@@ -25,6 +25,20 @@ test("agency saves a package draft and submits it for first review", async ({
       return route.fulfill({
         json: [{ id: "40000000-0000-4000-8000-000000000001", name: "Island" }],
       });
+    if (path.includes("package_publication_events"))
+      return route.fulfill({
+        json:
+          status === "changes_requested"
+            ? [
+                {
+                  id: "review",
+                  status: "changes_requested",
+                  note: "Explain the meeting point clearly.",
+                  created_at: "2026-10-07T00:00:00Z",
+                },
+              ]
+            : [],
+      });
     if (path.endsWith("save_package_draft")) {
       input = route.request().postDataJSON().package_input;
       return route.fulfill({ json: liveCard.id });
@@ -95,9 +109,22 @@ test("agency saves a package draft and submits it for first review", async ({
     .getByLabel("Agency cancellation terms", { exact: true })
     .fill("Agency will arrange a refund.");
   await page.getByRole("button", { name: "Save draft" }).click();
-  await expect(page.getByRole("status")).toContainText("Draft saved");
+  await expect(
+    page.getByRole("heading", { name: "Edit package" }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Submit for review" }).click();
   await expect(
     page.getByText("Awaiting first publication review"),
   ).toBeVisible();
+  status = "changes_requested";
+  version++;
+  await page.reload();
+  await expect(
+    page.getByText("Explain the meeting point clearly."),
+  ).toBeVisible();
+  await page.evaluate(() => {
+    window.location.hash =
+      "agency/20000000-0000-4000-8000-000000000001/packages/new";
+  });
+  await expect(page.getByLabel("Package title")).toHaveValue("");
 });

@@ -18,6 +18,7 @@ export default [
   {
     ignores: [
       ".next/**",
+      "next-env.d.ts",
       "coverage/**",
       "playwright-report/**",
       "test-results/**",
