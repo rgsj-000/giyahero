@@ -1,7 +1,7 @@
 # Android and iPhone Marketplace Release
 
 Date: 2026-10-07
-Status: Platform, live marketplace scope, and agency approval flow agreed in chat; written specification awaiting review.
+Status: Written specification approved by the user; implementation plan awaiting review.
 
 ## Purpose and success criteria
 
@@ -85,4 +85,4 @@ Production setup requires separate staging/production Supabase configuration, an
 
 ## Review boundary
 
-The user has selected Android and iPhone, real listings and booking requests, and agency approval before confirmation. Publication review, pricing rules, cancellation rules, agency-arranged payment, native architecture, and delivery stages above are proposed implementation decisions for review. Implementation starts after written-spec review and implementation-plan review under the selected workflow.
+The user has approved this written specification, including Android and iPhone delivery, real listings and booking requests, agency approval before confirmation, publication review, pricing rules, cancellation rules, agency-arranged payment, and native architecture. Implementation starts after implementation-plan review and execution-method selection under the selected workflow.
