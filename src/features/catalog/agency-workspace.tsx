@@ -5,11 +5,15 @@ import { listMyAgencies } from "./catalog-management-service";
 import { CatalogState, useData } from "./catalog-state";
 import { AgencyPackageList } from "./agency-package-list";
 import { PackageEditor } from "./package-editor";
+import { AgencyInbox } from "../bookings/agency-inbox";
+import { AgencyRequestDetail } from "../bookings/agency-request-detail";
 export function AgencyWorkspace({
   client,
   agencyId,
   packageId,
   editing = false,
+  requests = false,
+  requestId,
   onLogin,
   openExternal,
 }: {
@@ -17,6 +21,8 @@ export function AgencyWorkspace({
   agencyId?: string;
   packageId?: string;
   editing?: boolean;
+  requests?: boolean;
+  requestId?: string;
   onLogin: (returnPath: string) => void;
   openExternal: (path: string) => void;
 }) {
@@ -112,7 +118,34 @@ export function AgencyWorkspace({
               Verification
             </button>
           </div>
-          {["owner", "manager", "content_staff"].includes(membership.role) ? (
+          {requests ? (
+            ["owner", "manager", "booking_staff"].includes(membership.role) ? (
+              requestId ? (
+                <AgencyRequestDetail
+                  key={requestId}
+                  client={client}
+                  agencyId={agencyId}
+                  requestId={requestId}
+                  onChanged={() => {}}
+                />
+              ) : (
+                <AgencyInbox
+                  client={client}
+                  agencyId={agencyId}
+                  onOpenRequest={(id) => {
+                    window.location.hash =
+                      "agency/" + agencyId + "/requests/" + id;
+                  }}
+                />
+              )
+            ) : (
+              <p>
+                Your role cannot view booking requests or traveler contacts.
+              </p>
+            )
+          ) : ["owner", "manager", "content_staff"].includes(
+              membership.role,
+            ) ? (
             editing ? (
               <PackageEditor
                 client={client}

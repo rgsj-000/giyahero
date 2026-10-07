@@ -55,8 +55,12 @@ afterEach(async () => {
   await db?.close();
 });
 it("rejects an outdated displayed package version", async () => {
- await db.query('update public.packages set version=2 where id=$1',[packageId]);
- await expect(submit(input({expectedVersion:1}))).rejects.toThrow('Package changed');
+  await db.query("update public.packages set version=2 where id=$1", [
+    packageId,
+  ]);
+  await expect(submit(input({ expectedVersion: 1 }))).rejects.toThrow(
+    "Package changed",
+  );
 });
 it("derives identity, dates, safe price and immutable terms on the server", async () => {
   const id = await submit();

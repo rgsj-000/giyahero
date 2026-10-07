@@ -6,10 +6,14 @@ export function WebAgencyWorkspace({
   agencyId,
   packageId,
   editing = false,
+  requests = false,
+  requestId,
 }: {
   agencyId: string;
   packageId?: string;
   editing?: boolean;
+  requests?: boolean;
+  requestId?: string;
 }) {
   const client = useMemo(() => createBrowserSupabaseClient(), []);
   useEffect(() => {
@@ -17,8 +21,12 @@ export function WebAgencyWorkspace({
       window.location.hash =
         "agency/" +
         agencyId +
-        (editing ? "/packages/" + (packageId ?? "new") : "");
-  }, [agencyId, packageId, editing]);
+        (requests
+          ? "/requests" + (requestId ? "/" + requestId : "")
+          : editing
+            ? "/packages/" + (packageId ?? "new")
+            : "");
+  }, [agencyId, packageId, editing, requests, requestId]);
   return (
     <MarketplaceShell
       client={client}

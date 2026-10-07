@@ -19,6 +19,8 @@ type Screen = {
   editing?: boolean;
   bookingPackageId?: string;
   requestId?: string;
+  requests?: boolean;
+  agencyRequestId?: string;
 };
 function readScreen(): Screen {
   const hash = window.location.hash.slice(1);
@@ -35,6 +37,8 @@ function readScreen(): Screen {
     return {
       name: "agency",
       agencyId: parts[1],
+      requests: parts[2] === "requests",
+      agencyRequestId: parts[2] === "requests" ? parts[3] : undefined,
       editing: parts[2] === "packages",
       editPackageId: parts[3] === "new" ? undefined : parts[3],
     };
@@ -177,6 +181,8 @@ export function MarketplaceShell({
             agencyId={screen.agencyId}
             packageId={screen.editPackageId}
             editing={screen.editing}
+            requests={screen.requests}
+            requestId={screen.agencyRequestId}
             onLogin={onLogin}
             openExternal={openExternal}
           />
