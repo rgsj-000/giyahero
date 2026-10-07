@@ -1,0 +1,48 @@
+import type { z } from "zod";
+import type { bookingInputSchema } from "./request";
+import type { CatalogDetail } from "../catalog/types";
+export type BookingInput = z.infer<typeof bookingInputSchema>;
+export type BookingStatus = "pending" | "accepted" | "declined" | "cancelled";
+export type BookingSnapshot = {
+  title: string;
+  agencyName: string;
+  currencyCode: string;
+  totalAmountMinor: number;
+  rateLabel: string;
+  pricingModel: string;
+  startsOn: string;
+  endsOn: string;
+  startsAt: string | null;
+  endsAt: string | null;
+  adults: number;
+  children: number;
+  itinerary: CatalogDetail["itinerary"];
+  inclusions: string[];
+  exclusions: string[];
+  policies: CatalogDetail["policies"];
+  paymentTerms: string;
+};
+export type BookingRecord = {
+  id: string;
+  travelerId: string;
+  agencyId: string;
+  packageId: string;
+  rateId: string;
+  departureId: string | null;
+  status: BookingStatus;
+  snapshot: BookingSnapshot;
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string;
+  notes: string;
+  createdAt: string;
+  decidedAt: string | null;
+  decisionReason: string;
+};
+export type BookingEvent = {
+  id: string;
+  requestId: string;
+  status: BookingStatus;
+  reason: string;
+  createdAt: string;
+};

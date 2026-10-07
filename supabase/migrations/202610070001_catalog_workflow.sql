@@ -19,7 +19,7 @@ begin
  select * into pol from public.package_policies where package_id=p.id;
  if char_length(trim(p.overview)) not between 30 and 8000
  or not exists(select 1 from public.package_destinations where package_id=p.id)
- or not exists(select 1 from public.package_prices where package_id=p.id)
+ or not exists(select 1 from public.package_prices where package_id=p.id and is_active)
  or not exists(select 1 from public.package_itinerary_days where package_id=p.id)
  or exists(select 1 from public.package_itinerary_days where package_id=p.id and day_number>p.duration_days)
  or not exists(select 1 from public.package_features where package_id=p.id and feature_type='inclusion')
@@ -28,8 +28,8 @@ begin
  or char_length(trim(pol.rescheduling_terms)) not between 10 and 4000
  or char_length(trim(pol.no_show_terms)) not between 10 and 4000
  or char_length(trim(pol.agency_cancellation_terms)) not between 10 and 4000
- or (p.schedule_model='fixed_departures' and not exists(select 1 from public.package_departures where package_id=p.id))
- or (p.schedule_model='open_dates' and (p.open_date_start is null or p.open_date_end is null or exists(select 1 from public.package_departures where package_id=p.id))) then
+ or (p.schedule_model='fixed_departures' and not exists(select 1 from public.package_departures where package_id=p.id and is_active))
+ or (p.schedule_model='open_dates' and (p.open_date_start is null or p.open_date_end is null or exists(select 1 from public.package_departures where package_id=p.id and is_active))) then
   raise exception 'Package must be complete before publication or review' using errcode='22023';
  end if;
 end;
@@ -46,6 +46,7 @@ begin
  end if;
  if not was_new then
   select * into p from public.packages where id=pid for update;
+  perform 1 from public.package_departures where package_id=pid order by id for update;
   if p.id is null or p.agency_id<>target_agency_id then raise exception 'Not authorized to edit this package' using errcode='42501'; end if;
   if p.version is distinct from expected_version then raise exception 'Package changed; refresh before saving' using errcode='40001'; end if;
   if p.publication_status in ('pending_first_review','archived','suspended') then raise exception 'Package cannot be edited in its current state'; end if;
@@ -79,7 +80,7 @@ begin
   if exists(select 1 from public.package_prices where id=rid and package_id<>pid) then raise exception 'Foreign price option' using errcode='42501'; end if;
   insert into public.package_prices(id,package_id,label,min_travelers,max_travelers,amount_minor)
   values(rid,pid,trim(item->>'label'),(item->>'minTravelers')::smallint,(item->>'maxTravelers')::smallint,(item->>'amountMinor')::bigint)
-  on conflict(id) do update set label=excluded.label,min_travelers=excluded.min_travelers,max_travelers=excluded.max_travelers,amount_minor=excluded.amount_minor;
+  on conflict(id) do update set label=excluded.label,min_travelers=excluded.min_travelers,max_travelers=excluded.max_travelers,amount_minor=excluded.amount_minor,is_active=true;
   kept:=array_append(kept,rid);
  end loop;
  delete from public.package_prices where package_id=pid and not(id=any(kept));
@@ -89,7 +90,7 @@ begin
   if exists(select 1 from public.package_departures where id=rid and package_id<>pid) then raise exception 'Foreign departure' using errcode='42501'; end if;
   insert into public.package_departures(id,package_id,starts_at,ends_at,booking_cutoff_at,capacity)
   values(rid,pid,(item->>'startsAt')::timestamptz,(item->>'endsAt')::timestamptz,(item->>'bookingCutoffAt')::timestamptz,(item->>'capacity')::integer)
-  on conflict(id) do update set starts_at=excluded.starts_at,ends_at=excluded.ends_at,booking_cutoff_at=excluded.booking_cutoff_at,capacity=excluded.capacity;
+  on conflict(id) do update set starts_at=excluded.starts_at,ends_at=excluded.ends_at,booking_cutoff_at=excluded.booking_cutoff_at,capacity=excluded.capacity,is_active=true;
   kept:=array_append(kept,rid);
  end loop;
  delete from public.package_departures where package_id=pid and not(id=any(kept));
@@ -175,11 +176,10 @@ begin
  payload:=p.draft_payload;
  if payload is null then raise exception 'Legacy package must be migrated to the editor'; end if;
  payload:=payload||jsonb_build_object(
- 'prices',coalesce((select jsonb_agg(jsonb_build_object('id',id,'label',label,'minTravelers',min_travelers,'maxTravelers',max_travelers,'amountMinor',amount_minor) order by sort_order,id) from public.package_prices where package_id=p.id),'[]'::jsonb),
- 'departures',coalesce((select jsonb_agg(jsonb_build_object('id',id,'startsAt',starts_at,'endsAt',ends_at,'bookingCutoffAt',booking_cutoff_at,'capacity',capacity) order by starts_at) from public.package_departures where package_id=p.id),'[]'::jsonb));
+ 'prices',coalesce((select jsonb_agg(jsonb_build_object('id',id,'label',label,'minTravelers',min_travelers,'maxTravelers',max_travelers,'amountMinor',amount_minor) order by sort_order,id) from public.package_prices where package_id=p.id and is_active),'[]'::jsonb),
+ 'departures',coalesce((select jsonb_agg(jsonb_build_object('id',id,'startsAt',starts_at,'endsAt',ends_at,'bookingCutoffAt',booking_cutoff_at,'capacity',capacity) order by starts_at) from public.package_departures where package_id=p.id and is_active),'[]'::jsonb));
  return jsonb_build_object('input',payload,'version',p.version,'status',p.publication_status,'firstReviewedAt',p.first_reviewed_at);
 end;
 $$;
 revoke all on function public.get_package_draft(uuid) from public;
 grant execute on function public.get_package_draft(uuid) to authenticated;
-

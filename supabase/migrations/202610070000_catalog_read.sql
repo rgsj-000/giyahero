@@ -1,10 +1,12 @@
 -- Public RPCs deliberately exclude staff-only drafts and traveler information.
+alter table public.package_prices add column is_active boolean not null default true;
+alter table public.package_departures add column is_active boolean not null default true;
 create function public.catalog_card(target_package_id uuid) returns jsonb
 language sql stable security definer set search_path = '' as $$
  select jsonb_build_object(
   'id',p.id,'agencyId',a.id,'agencyName',a.name,'slug',p.slug,'title',p.title,
   'durationDays',p.duration_days,'currencyCode',p.currency_code,
-  'fromAmountMinor',(select min(r.amount_minor) from public.package_prices r where r.package_id=p.id),
+  'fromAmountMinor',(select min(r.amount_minor) from public.package_prices r where r.package_id=p.id and r.is_active),
   'imagePath',(select m.storage_path from public.package_media m where m.package_id=p.id order by m.sort_order,m.id limit 1),
   'destinationNames',coalesce((select jsonb_agg(d.name order by pd.sort_order,d.name) from public.package_destinations pd join public.destinations d on d.id=pd.destination_id where pd.package_id=p.id),'[]'::jsonb)
  ) from public.packages p join public.agencies a on a.id=p.agency_id
@@ -36,12 +38,12 @@ begin
   and (cursor_at is null or (p.created_at,p.id)<(cursor_at,cursor_id))
   and (party is null or party between p.min_travelers and p.max_travelers)
   and (filters->>'destinationId' is null or exists(select 1 from public.package_destinations d where d.package_id=p.id and d.destination_id=(filters->>'destinationId')::uuid))
-  and exists(select 1 from public.package_prices r where r.package_id=p.id
+  and exists(select 1 from public.package_prices r where r.package_id=p.id and r.is_active
    and (party is null or (party>=r.min_travelers and (r.max_travelers is null or party<=r.max_travelers)))
    and (budget is null or (p.currency_code='PHP' and r.amount_minor::numeric * case when party is null or p.pricing_model='per_group' then 1 else party end<=budget)))
   and (filters->>'startsOn' is null or (
    (p.schedule_model='open_dates' and (filters->>'startsOn')::date between p.open_date_start and p.open_date_end-p.duration_days+1)
-   or (p.schedule_model='fixed_departures' and exists(select 1 from public.package_departures d where d.package_id=p.id
+   or (p.schedule_model='fixed_departures' and exists(select 1 from public.package_departures d where d.package_id=p.id and d.is_active and not d.is_cancelled
     and (d.starts_at at time zone 'Asia/Manila')::date=(filters->>'startsOn')::date and d.booking_cutoff_at>now()))))
   order by p.created_at desc,p.id desc limit n+1
  ), page as (select * from candidates order by created_at desc,id desc limit n)
@@ -63,8 +65,8 @@ language sql stable security definer set search_path = '' as $$
   'agencyContactEmail',a.contact_email,'agencyContactPhone',a.contact_phone,
   'pricingModel',p.pricing_model,'scheduleModel',p.schedule_model,'minTravelers',p.min_travelers,'maxTravelers',p.max_travelers,
   'openDateWindow',case when p.open_date_start is not null then jsonb_build_object('startsOn',p.open_date_start,'endsOn',p.open_date_end) else null end,
-  'rates',coalesce((select jsonb_agg(jsonb_build_object('id',r.id,'label',r.label,'amountMinor',r.amount_minor,'minTravelers',r.min_travelers,'maxTravelers',r.max_travelers) order by r.sort_order,r.id) from public.package_prices r where r.package_id=p.id),'[]'::jsonb),
-  'departures',coalesce((select jsonb_agg(jsonb_build_object('id',d.id,'startsAt',d.starts_at,'endsAt',d.ends_at,'bookingCutoffAt',d.booking_cutoff_at,'capacity',d.capacity,'remainingCapacity',d.capacity) order by d.starts_at) from public.package_departures d where d.package_id=p.id),'[]'::jsonb),
+  'rates',coalesce((select jsonb_agg(jsonb_build_object('id',r.id,'label',r.label,'amountMinor',r.amount_minor,'minTravelers',r.min_travelers,'maxTravelers',r.max_travelers) order by r.sort_order,r.id) from public.package_prices r where r.package_id=p.id and r.is_active),'[]'::jsonb),
+  'departures',coalesce((select jsonb_agg(jsonb_build_object('id',d.id,'startsAt',d.starts_at,'endsAt',d.ends_at,'bookingCutoffAt',d.booking_cutoff_at,'capacity',d.capacity,'remainingCapacity',d.capacity) order by d.starts_at) from public.package_departures d where d.package_id=p.id and d.is_active and not d.is_cancelled),'[]'::jsonb),
   'itinerary',coalesce((select jsonb_agg(jsonb_build_object('dayNumber',d.day_number,'title',d.title,'description',d.description) order by d.day_number) from public.package_itinerary_days d where d.package_id=p.id),'[]'::jsonb),
   'inclusions',coalesce((select jsonb_agg(f.description order by f.sort_order,f.id) from public.package_features f where f.package_id=p.id and f.feature_type='inclusion'),'[]'::jsonb),
   'exclusions',coalesce((select jsonb_agg(f.description order by f.sort_order,f.id) from public.package_features f where f.package_id=p.id and f.feature_type='exclusion'),'[]'::jsonb),
@@ -76,4 +78,3 @@ language sql stable security definer set search_path = '' as $$
 $$;
 revoke all on function public.get_public_package_detail(uuid) from public;
 grant execute on function public.get_public_package_detail(uuid) to anon,authenticated;
-
