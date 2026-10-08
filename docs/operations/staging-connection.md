@@ -34,3 +34,11 @@ Canonical testing website: [GiyaHero staging](https://giyahero-staging-rnj007s-p
 - The deployment's error/fatal runtime log query returned no matching records in the last 30 minutes. This is limited to the exercised guest pages and is not a complete application audit.
 
 These checks do not establish completed email confirmation/sign-in, agency approval end to end, simultaneous booking acceptance, hosted media upload behavior, native compilation or device installation. Existing automated/mock evidence and release gates are recorded in [mobile-handoff.md](mobile-handoff.md).
+
+## Owner-approved demo data — 2026-10-07
+
+GHDB now contains 15 confirmed synthetic users covering every account role, three verified demo agencies, one agency awaiting review, twelve published Quezon tours, two packages awaiting content review, one draft, and four traveler bookings across pending, accepted, declined and cancelled states. The twelve public tours include private Storage images, itineraries, prices, policies and future travel dates. These are demo offerings, not real travel services or reservations.
+
+All fifteen email/password sign-ins and assigned roles were checked against live Auth and row security. Guest catalog/details, signed image downloads and the demo traveler's booking reads passed. Fresh desktop and phone browser tests of the hosted site displayed all twelve tour cards with fully loaded images, filtered Pagbilao to two matching tours and opened tour details. The traveler signed in through the hosted login form and saw all four booking states in My Trips. These checks used real hosted responses.
+
+Private credentials and agency routes are in the ignored `.demo-seed/LOGIN-GUIDE.md` at the repository root. [Demo data setup](demo-data.md) documents the repeatable seed. The pending agency has no legal evidence attached, and moderator/support/finance roles have no dedicated screens yet. Real accreditation, concurrency on GHDB and native device installation remain separate checks.
